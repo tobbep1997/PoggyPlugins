@@ -49,4 +49,5 @@ include 'BobTheHunter'
 include 'BobTheChef'
 include 'BobTheWizard'
 include 'BobTheThief'
+include 'BobTheSkiller'
 
