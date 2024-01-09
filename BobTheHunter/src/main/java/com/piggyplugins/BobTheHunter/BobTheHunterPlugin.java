@@ -1,15 +1,28 @@
 package com.piggyplugins.BobTheHunter;
 
+import com.example.EthanApiPlugin.Collections.ETileItem;
+import com.example.EthanApiPlugin.Collections.TileItems;
 import com.example.EthanApiPlugin.Collections.TileObjects;
+import com.example.EthanApiPlugin.Collections.query.ItemQuery;
+import com.example.EthanApiPlugin.Collections.query.PlayerQuery;
 import com.example.EthanApiPlugin.Collections.query.TileObjectQuery;
 import com.example.EthanApiPlugin.EthanApiPlugin;
+import com.example.InteractionApi.InventoryInteraction;
+import com.example.InteractionApi.TileObjectInteraction;
+import com.example.Packets.MousePackets;
 import com.example.Packets.MovementPackets;
+import com.example.Packets.PlayerPackets;
+import com.example.Packets.TileItemPackets;
 import com.google.inject.Provides;
+import com.piggyplugins.PiggyUtils.API.InventoryUtil;
+import com.piggyplugins.PiggyUtils.API.PlayerUtil;
 import com.piggyplugins.PiggyUtils.API.TileItemUtil;
 import com.piggyplugins.PiggyUtils.BreakHandler.ReflectBreakHandler;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.GameTick;
+import net.runelite.api.events.ItemSpawned;
+import net.runelite.api.widgets.Widget;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.input.KeyManager;
@@ -22,6 +35,7 @@ import com.google.inject.Inject;
 import org.apache.commons.lang3.RandomUtils;
 
 import java.util.List;
+import java.util.Optional;
 
 
 @PluginDescriptor(
@@ -46,6 +60,11 @@ public class BobTheHunterPlugin extends Plugin {
     boolean started;
     private int timeout;
     WorldPoint startTile;
+    WorldPoint targetTile;
+    WorldPoint playerTile;
+    String debugInfo = "";
+
+    boolean resetStartTile = true;
 
     @Override
     protected void startUp() throws Exception {
@@ -69,9 +88,17 @@ public class BobTheHunterPlugin extends Plugin {
     @Subscribe
     private void onGameTick(GameTick event) {
         if (!EthanApiPlugin.loggedIn() || !started || breakHandler.isBreakActive(this)) {
+            startTile = null;
+            resetStartTile = true;
             // We do an early return if the user isn't logged in
             return;
         }
+
+        getStartTile();
+
+        playerTile = client.getLocalPlayer().getWorldLocation();
+
+        debugInfo = Integer.toString(GetActiveTraps().result().size());
 
         state = getNextState();
         handleState();
@@ -86,11 +113,24 @@ public class BobTheHunterPlugin extends Plugin {
             case TIMEOUT:
                 timeout--;
                 break;
+            case TIMEOUT_TRAPS:
+                PickUpTimeoutTraps();
+                setTimeout();
+                break;
+            case MOVE_TO_TILE:
+                moveToTargetTile();
+                setTimeout();
+                break;
             case PLACE_TRAPS:
+                placeTraps();
                 break;
             case SUCCESSFUL_TRAPS:
+                ClearSuccessfulTrap();
+                setTimeout();
                 break;
             case FAILED_TRAPS:
+                ClearFailedTraps();
+                setTimeout();
                 break;
             case WAIT:
                 playerWait();
@@ -107,10 +147,21 @@ public class BobTheHunterPlugin extends Plugin {
             return State.TIMEOUT;
         }
 
+        if (targetTile != null && !playerAtTarget()) {
+            return State.MOVE_TO_TILE;
+        }
+
         if (breakHandler.shouldBreak(this)) {
             return State.HANDLE_BREAK;
         }
-
+        if (InventoryUtil.getItems().size() > 26 || state == State.DROP_ITEMS)
+        {
+            return State.DROP_ITEMS;
+        }
+        if (!GetTimeoutTraps().isEmpty())
+        {
+            return State.TIMEOUT_TRAPS;
+        }
         if (!GetSuccessfulTraps().isEmpty())
         {
             return State.SUCCESSFUL_TRAPS;
@@ -119,50 +170,143 @@ public class BobTheHunterPlugin extends Plugin {
         {
             return State.FAILED_TRAPS;
         }
-
         if (GetActiveTraps().result().size() < config.trapCount())
         {
             return State.PLACE_TRAPS;
         }
-
         return State.WAIT;
+    }
+
+    private void getStartTile()
+    {
+        if (startTile == null || resetStartTile)
+        {
+            startTile = client.getLocalPlayer().getWorldLocation();
+            resetStartTile = false;
+        }
     }
 
     private List<TileObject> GetSuccessfulTraps()
     {
-
         return GetActiveTraps().withAction("Check").result();
     }
 
     private List<TileObject> GetFailedTraps()
     {
-        List<TileObject> allTraps = GetActiveTraps().result();
-        List<TileObject> successfulTraps = GetSuccessfulTraps();
-
-        allTraps.removeAll(successfulTraps);
-
-        return allTraps;
+        List<TileObject> traps = GetActiveTraps().withAction("Dismantle").result();
+        traps.removeAll(GetActiveTraps().withAction("Investigate").result());
+        return traps;
     }
 
     private TileObjectQuery GetActiveTraps()
     {
-        return TileObjects.search().nameContains(TrapToString());
+        return TileObjects.search().nameContains(TrapToString()).withinDistance(5);
     }
 
-    private List<TileObject> GetTimeoutTraps()
+    private List<ETileItem> GetTimeoutTraps()
     {
-        return GetActiveTraps().withAction("Lay").result();
+        return TileItems.search().nameContains(TrapToString()).result();
+    }
+
+    private WorldPoint GetTrapPositions(WorldPoint startTile, int index, boolean fiveTraps)
+    {
+        WorldPoint retPoint = new WorldPoint(startTile.getX(), startTile.getY(), startTile.getPlane());
+        if (fiveTraps)
+        {
+
+        }
+        else
+        {
+            switch (index)
+            {
+                case 0:
+                    retPoint = retPoint.dx(1);
+                    break;
+                case 1:
+                    retPoint = retPoint.dy(1);
+                    break;
+                case 2:
+                    retPoint = retPoint.dx(-1);
+                    break;
+                case 3:
+                    retPoint = retPoint.dy(-1);
+                    break;
+            }
+        }
+        return retPoint;
+    }
+
+    private boolean playerAtTarget()
+    {
+        return client.getLocalPlayer().getWorldLocation().getX() == targetTile.getX() && client.getLocalPlayer().getWorldLocation().getY() == targetTile.getY();
+    }
+
+    private void moveToTargetTile()
+    {
+        //Move the player to the trap location
+        MousePackets.queueClickPacket();
+        MovementPackets.queueMovement(targetTile);
+
+        if (playerAtTarget())
+            targetTile = null;
     }
 
     private void placeTraps()
     {
+        Optional<Widget> trap = InventoryUtil.nameContainsNoCase(TrapToString().toLowerCase()).first();
+        if (trap.isEmpty())
+            return;
 
+        for (int i = 0; i < config.trapCount(); i++)
+        {
+            WorldPoint trapTarget = GetTrapPositions(startTile, i, config.trapCount() >= 5);
+            TileObjectQuery tileQuery = GetActiveTraps();
+
+
+            if (!tileQuery.atLocation(trapTarget).result().isEmpty())
+                continue;
+
+            targetTile = trapTarget;
+            if (!playerAtTarget())
+                break;
+            targetTile = null;
+
+            MousePackets.queueClickPacket();
+            InventoryInteraction.useItem(trap.get(), "Lay");
+            timeout = 5;
+        }
+    }
+
+    private void ClearSuccessfulTrap()
+    {
+        for (TileObject getSuccessfulTrap : GetSuccessfulTraps()) {
+            MousePackets.queueClickPacket();
+            TileObjectInteraction.interact(getSuccessfulTrap, "Check");
+        }
+    }
+
+    private void ClearFailedTraps()
+    {
+        for (TileObject getSuccessfulTrap : GetFailedTraps()) {
+            MousePackets.queueClickPacket();
+            TileObjectInteraction.interact(getSuccessfulTrap, "Dismantle");
+        }
+    }
+
+    private void PickUpTimeoutTraps()
+    {
+        if (TileItems.search().nameContains(TrapToString()).withinDistance(5).nearestToPlayer().isPresent())
+        {
+            MousePackets.queueClickPacket();
+            TileItemPackets.queueTileItemAction(TileItems.search().nameContains(TrapToString()).withinDistance(5).nearestToPlayer().get(), false);
+        }
     }
 
     private void playerWait()
     {
         if (client.getLocalPlayer().getWorldLocation() != startTile)
         {
+            MousePackets.queueClickPacket();
             MovementPackets.queueMovement(startTile);
         }
     }
@@ -171,7 +315,7 @@ public class BobTheHunterPlugin extends Plugin {
     {
         switch (config.trapType()){
             case BIRD_SNARE:
-                return "Bird Snare";
+                return "Bird snare";
             default:
                 return "";
         }
@@ -197,6 +341,8 @@ public class BobTheHunterPlugin extends Plugin {
         if (!started) {
             this.state = State.TIMEOUT;
             breakHandler.stopPlugin(this);
+            resetStartTile = true;
+            startTile = null;
         } else {
             breakHandler.startPlugin(this);
             startTile = client.getLocalPlayer().getWorldLocation();

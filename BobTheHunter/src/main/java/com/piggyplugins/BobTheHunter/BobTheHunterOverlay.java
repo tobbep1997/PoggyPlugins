@@ -25,7 +25,7 @@ public class BobTheHunterOverlay extends OverlayPanel {
     public Dimension render(Graphics2D graphics) {
         panelComponent.setPreferredSize(new Dimension(200, 320));
         panelComponent.getChildren().add(TitleComponent.builder()
-                .text("Alc Tele")
+                .text("Bob The Hunter")
                 .color(new Color(255, 157, 249))
                 .build());
         panelComponent.getChildren().add(TitleComponent.builder()
@@ -36,6 +36,12 @@ public class BobTheHunterOverlay extends OverlayPanel {
                 .left("State: ")
                 .leftColor(new Color(255, 157, 249))
                 .right(plugin.state==null || !plugin.started ? "STOPPED" : plugin.state.name())
+                .rightColor(Color.WHITE)
+                .build());
+        panelComponent.getChildren().add(LineComponent.builder()
+                .left("DEBUG: ")
+                .leftColor(new Color(255, 157, 249))
+                .right(plugin.debugInfo)
                 .rightColor(Color.WHITE)
                 .build());
 

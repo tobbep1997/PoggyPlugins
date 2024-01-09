@@ -68,6 +68,14 @@ public interface BobTheHunterConfig extends Config {
         return 3;
     }
 
-
+    @ConfigItem(
+            name = "Keep Items",
+            keyName = "itemToKeep",
+            description = "Items you don't want dropped. Separate items by comma,no space. Good for UIM",
+            position = 3
+    )
+    default String itemsToKeep() {
+        return "coins,rune pouch,divine rune pouch,looting bag,clue scroll";
+    }
 
 }
