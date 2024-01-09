@@ -26,7 +26,7 @@ import java.util.Optional;
 
 
 @PluginDescriptor(
-        name = "<html><font color=\"#FF9DF9\">[PP]</font> BobTheWizard</html>",
+        name = "<html><font color=\"#FF9DF9\">[PP]</font> Bob The Wizard</html>",
         description = "Magic goes brrr",
         tags = {"ethan", "piggy", "skilling"}
 )

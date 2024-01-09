@@ -29,7 +29,7 @@ import java.util.*;
 
 
 @PluginDescriptor(
-        name = "<html><font color=\"#FF9DF9\">[PP]</font> BobTheThief</html>",
+        name = "<html><font color=\"#FF9DF9\">[PP]</font> Bob The Thief</html>",
         description = "Will interact with an object and drop or bank all items when inventory is full",
         tags = {"ethan", "piggy", "skilling"}
 )

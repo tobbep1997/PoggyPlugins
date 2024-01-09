@@ -2,7 +2,7 @@ package com.piggyplugins.BobTheHunter;
 
 import net.runelite.client.config.*;
 
-@ConfigGroup("AlcTele")
+@ConfigGroup("BobTheHunter")
 public interface BobTheHunterConfig extends Config {
     @ConfigSection(
             name = "Tick Delays",

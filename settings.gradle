@@ -50,4 +50,6 @@ include 'BobTheChef'
 include 'BobTheWizard'
 include 'BobTheThief'
 include 'BobTheSkiller'
+include 'AutoRuneDragons'
+
 
