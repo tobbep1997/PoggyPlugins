@@ -1,6 +1,7 @@
 package com.piggyplugins.BobTheHunter;
 
 import com.example.EthanApiPlugin.Collections.ETileItem;
+import com.example.EthanApiPlugin.Collections.Inventory;
 import com.example.EthanApiPlugin.Collections.TileItems;
 import com.example.EthanApiPlugin.Collections.TileObjects;
 import com.example.EthanApiPlugin.Collections.query.ItemQuery;
@@ -32,8 +33,11 @@ import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.HotkeyListener;
 
 import com.google.inject.Inject;
+import net.runelite.client.util.Text;
 import org.apache.commons.lang3.RandomUtils;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -113,6 +117,9 @@ public class BobTheHunterPlugin extends Plugin {
             case TIMEOUT:
                 timeout--;
                 break;
+            case DROP_ITEMS:
+                DropItems();
+                break;
             case TIMEOUT_TRAPS:
                 PickUpTimeoutTraps();
                 setTimeout();
@@ -154,7 +161,7 @@ public class BobTheHunterPlugin extends Plugin {
         if (breakHandler.shouldBreak(this)) {
             return State.HANDLE_BREAK;
         }
-        if (InventoryUtil.getItems().size() > 26 || state == State.DROP_ITEMS)
+        if ((InventoryUtil.getItems().size() > 24 || state == State.DROP_ITEMS) && !isInventoryReset())
         {
             return State.DROP_ITEMS;
         }
@@ -300,6 +307,35 @@ public class BobTheHunterPlugin extends Plugin {
             MousePackets.queueClickPacket();
             TileItemPackets.queueTileItemAction(TileItems.search().nameContains(TrapToString()).withinDistance(5).nearestToPlayer().get(), false);
         }
+    }
+
+    private void DropItems()
+    {
+        //This is now mine
+        List<Widget> itemsToDrop = Inventory.search()
+                .filter(item -> !shouldKeep(item.getName())).result();
+
+        for (int i = 0; i < Math.min(itemsToDrop.size(), RandomUtils.nextInt(1, 3)); i++) {
+            MousePackets.queueClickPacket();
+            InventoryInteraction.useItem(itemsToDrop.get(i), "Drop");
+        }
+    }
+
+    private boolean shouldKeep(String name) {
+        List<String> itemsToKeep = new ArrayList<>(List.of(config.itemsToKeep().split(",")));
+        itemsToKeep.add(TrapToString());
+        return itemsToKeep.stream()
+                .anyMatch(i -> Text.removeTags(name.toLowerCase()).contains(i.toLowerCase()));
+    }
+
+    private boolean isInventoryReset() {
+        List<Widget> inventory = Inventory.search().result();
+        for (Widget item : inventory) {
+            if (!shouldKeep(Text.removeTags(item.getName()))) { // using our shouldKeep method, we can filter the items here to only include the ones we want to drop.
+                return false;
+            }
+        }
+        return true; // we will know that the inventory is reset because the inventory only contains items we want to keep
     }
 
     private void playerWait()
