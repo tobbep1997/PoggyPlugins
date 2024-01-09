@@ -143,8 +143,8 @@ public class BobTheChefPlugin extends Plugin {
 
         MousePackets.queueClickPacket();
         MousePackets.queueClickPacket();
-        TileItemPackets.queueWidgetOnTileItem(cookingRangeObject, InventoryUtil.getItem(config.rawFood()).get(), false);
-        WidgetPackets.queueWidgetOnWidget(cookingRangeObject, InventoryUtil.getItem(config.rawFood()).get());
+        //TileItemPackets.queueWidgetOnTileItem(cookingRangeObject, InventoryUtil.getItem(config.rawFood()).get(), false);
+        //WidgetPackets.queueWidgetOnWidget(cookingRangeObject, InventoryUtil.getItem(config.rawFood()).get());
     }
     private void bank()
     {

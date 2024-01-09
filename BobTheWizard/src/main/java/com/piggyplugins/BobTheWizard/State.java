@@ -1,4 +1,4 @@
-package com.piggyplugins.AlcTele;
+package com.piggyplugins.BobTheWizard;
 
 public enum State {
     ANIMATING,

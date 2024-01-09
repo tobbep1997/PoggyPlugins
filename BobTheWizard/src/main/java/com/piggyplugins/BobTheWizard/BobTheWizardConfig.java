@@ -1,9 +1,9 @@
-package com.piggyplugins.AlcTele;
+package com.piggyplugins.BobTheWizard;
 
 import net.runelite.client.config.*;
 
-@ConfigGroup("AlcTele")
-public interface AlcTelePluginConfig extends Config {
+@ConfigGroup("BobTheWizard")
+public interface BobTheWizardConfig extends Config {
     @ConfigSection(
             name = "Tick Delays",
             description = "Configuration for delays added to skilling activities",

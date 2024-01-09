@@ -1,4 +1,4 @@
-package com.piggyplugins.AlcTele;
+package com.piggyplugins.BobTheWizard;
 
 import com.example.EthanApiPlugin.Collections.Inventory;
 import com.example.EthanApiPlugin.Collections.Widgets;
@@ -26,21 +26,21 @@ import java.util.Optional;
 
 
 @PluginDescriptor(
-        name = "<html><font color=\"#FF9DF9\">[PP]</font> Alcly Tele</html>",
+        name = "<html><font color=\"#FF9DF9\">[PP]</font> BobTheWizard</html>",
         description = "Magic goes brrr",
         tags = {"ethan", "piggy", "skilling"}
 )
-public class AlcTelePluginPlugin extends Plugin {
+public class BobTheWizardPlugin extends Plugin {
     @Inject
     private Client client;
     @Inject
-    AlcTelePluginConfig config;
+    BobTheWizardConfig config;
     @Inject
     private KeyManager keyManager;
     @Inject
     private OverlayManager overlayManager;
     @Inject
-    private AlcTelePluginOverlay overlay;
+    private BobTheWizardOverlay overlay;
     @Inject
     private ReflectBreakHandler breakHandler;
     State state;
@@ -69,8 +69,8 @@ public class AlcTelePluginPlugin extends Plugin {
     }
 
     @Provides
-    private AlcTelePluginConfig getConfig(ConfigManager configManager) {
-        return configManager.getConfig(AlcTelePluginConfig.class);
+    private BobTheWizardConfig getConfig(ConfigManager configManager) {
+        return configManager.getConfig(BobTheWizardConfig.class);
     }
 
     @Subscribe

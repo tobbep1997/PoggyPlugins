@@ -1,4 +1,4 @@
-package com.piggyplugins.AlcTele;
+package com.piggyplugins.BobTheWizard;
 
 import com.google.inject.Inject;
 import net.runelite.client.ui.overlay.OverlayPanel;
@@ -8,12 +8,12 @@ import net.runelite.client.ui.overlay.components.TitleComponent;
 
 import java.awt.*;
 
-public class AlcTelePluginOverlay extends OverlayPanel {
+public class BobTheWizardOverlay extends OverlayPanel {
 
-    private final AlcTelePluginPlugin plugin;
+    private final BobTheWizardPlugin plugin;
 
     @Inject
-    private AlcTelePluginOverlay(AlcTelePluginPlugin plugin) {
+    private BobTheWizardOverlay(BobTheWizardPlugin plugin) {
         super(plugin);
         this.plugin = plugin;
         setPosition(OverlayPosition.BOTTOM_LEFT);
