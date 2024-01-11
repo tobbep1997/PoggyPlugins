@@ -122,25 +122,29 @@ public class BobTheHunterPlugin extends Plugin {
                 break;
             case TIMEOUT_TRAPS:
                 PickUpTimeoutTraps();
+                targetTile = null;
                 setTimeout();
                 break;
             case MOVE_TO_TILE:
                 moveToTargetTile();
-                setTimeout();
+                targetTile = null;
                 break;
             case PLACE_TRAPS:
                 placeTraps();
                 break;
             case SUCCESSFUL_TRAPS:
                 ClearSuccessfulTrap();
+                targetTile = null;
                 setTimeout();
                 break;
             case FAILED_TRAPS:
                 ClearFailedTraps();
+                targetTile = null;
                 setTimeout();
                 break;
             case WAIT:
                 playerWait();
+                targetTile = null;
                 break;
         }
     }
@@ -149,25 +153,26 @@ public class BobTheHunterPlugin extends Plugin {
         if (EthanApiPlugin.isMoving()) {
             return State.ANIMATING;
         }
-
         if (timeout > 0) {
             return State.TIMEOUT;
         }
-
+        if (!GetTimeoutTraps().isEmpty())
+        {
+            return State.TIMEOUT_TRAPS;
+        }
         if (targetTile != null && !playerAtTarget()) {
             return State.MOVE_TO_TILE;
         }
-
+        if (GetActiveTraps().result().size() + (config.trapType() == TrapType.BOX_TRAP ? GetSuccessfulTraps().size() : 0) < config.trapCount())
+        {
+            return State.PLACE_TRAPS;
+        }
         if (breakHandler.shouldBreak(this)) {
             return State.HANDLE_BREAK;
         }
         if ((InventoryUtil.getItems().size() > 24 || state == State.DROP_ITEMS) && !isInventoryReset())
         {
             return State.DROP_ITEMS;
-        }
-        if (!GetTimeoutTraps().isEmpty())
-        {
-            return State.TIMEOUT_TRAPS;
         }
         if (!GetSuccessfulTraps().isEmpty())
         {
@@ -176,10 +181,6 @@ public class BobTheHunterPlugin extends Plugin {
         if (!GetFailedTraps().isEmpty())
         {
             return State.FAILED_TRAPS;
-        }
-        if (GetActiveTraps().result().size() < config.trapCount())
-        {
-            return State.PLACE_TRAPS;
         }
         return State.WAIT;
     }
@@ -195,24 +196,24 @@ public class BobTheHunterPlugin extends Plugin {
 
     private List<TileObject> GetSuccessfulTraps()
     {
-        return GetActiveTraps().withAction("Check").result();
+        return TileObjects.search().nameContains(TrapToString(true)).withinDistance(5).withAction("Check").result();
     }
 
     private List<TileObject> GetFailedTraps()
     {
-        List<TileObject> traps = GetActiveTraps().withAction("Dismantle").result();
-        traps.removeAll(GetActiveTraps().withAction("Investigate").result());
+        List<TileObject> traps = TileObjects.search().nameContains(TrapToString(false)).withinDistance(5).withAction("Dismantle").result();
+        traps.removeAll(TileObjects.search().nameContains(TrapToString(false)).withinDistance(5).withAction("Investigate").result());
         return traps;
     }
 
     private TileObjectQuery GetActiveTraps()
     {
-        return TileObjects.search().nameContains(TrapToString()).withinDistance(5);
+        return TileObjects.search().nameContains(TrapToString(false)).withinDistance(5);
     }
 
     private List<ETileItem> GetTimeoutTraps()
     {
-        return TileItems.search().nameContains(TrapToString()).result();
+        return TileItems.search().nameContains(TrapToString(false)).result();
     }
 
     private WorldPoint GetTrapPositions(WorldPoint startTile, int index, boolean fiveTraps)
@@ -260,7 +261,7 @@ public class BobTheHunterPlugin extends Plugin {
 
     private void placeTraps()
     {
-        Optional<Widget> trap = InventoryUtil.nameContainsNoCase(TrapToString().toLowerCase()).first();
+        Optional<Widget> trap = InventoryUtil.nameContainsNoCase(TrapToString(false).toLowerCase()).first();
         if (trap.isEmpty())
             return;
 
@@ -269,6 +270,10 @@ public class BobTheHunterPlugin extends Plugin {
             WorldPoint trapTarget = GetTrapPositions(startTile, i, config.trapCount() >= 5);
             TileObjectQuery tileQuery = GetActiveTraps();
 
+            if (!tileQuery.atLocation(trapTarget).result().isEmpty())
+                continue;
+
+            tileQuery = TileObjects.search().nameContains(TrapToString(true)).withinDistance(5).withAction("Check");
 
             if (!tileQuery.atLocation(trapTarget).result().isEmpty())
                 continue;
@@ -280,7 +285,7 @@ public class BobTheHunterPlugin extends Plugin {
 
             MousePackets.queueClickPacket();
             InventoryInteraction.useItem(trap.get(), "Lay");
-            timeout = 5;
+            timeout = 3;
         }
     }
 
@@ -302,10 +307,10 @@ public class BobTheHunterPlugin extends Plugin {
 
     private void PickUpTimeoutTraps()
     {
-        if (TileItems.search().nameContains(TrapToString()).withinDistance(5).nearestToPlayer().isPresent())
+        if (TileItems.search().nameContains(TrapToString(false)).withinDistance(5).nearestToPlayer().isPresent())
         {
             MousePackets.queueClickPacket();
-            TileItemPackets.queueTileItemAction(TileItems.search().nameContains(TrapToString()).withinDistance(5).nearestToPlayer().get(), false);
+            TileItemPackets.queueTileItemAction(TileItems.search().nameContains(TrapToString(false)).withinDistance(5).nearestToPlayer().get(), false);
         }
     }
 
@@ -317,13 +322,20 @@ public class BobTheHunterPlugin extends Plugin {
 
         for (int i = 0; i < Math.min(itemsToDrop.size(), RandomUtils.nextInt(1, 3)); i++) {
             MousePackets.queueClickPacket();
-            InventoryInteraction.useItem(itemsToDrop.get(i), "Drop");
+            if (itemsToDrop.get(i).getName().contains("Ferret"))
+            {
+                InventoryInteraction.useItem(itemsToDrop.get(i), "Release");
+            }
+            else
+            {
+                InventoryInteraction.useItem(itemsToDrop.get(i), "Drop");
+            }
         }
     }
 
     private boolean shouldKeep(String name) {
         List<String> itemsToKeep = new ArrayList<>(List.of(config.itemsToKeep().split(",")));
-        itemsToKeep.add(TrapToString());
+        itemsToKeep.add(TrapToString(false));
         return itemsToKeep.stream()
                 .anyMatch(i -> Text.removeTags(name.toLowerCase()).contains(i.toLowerCase()));
     }
@@ -331,27 +343,33 @@ public class BobTheHunterPlugin extends Plugin {
     private boolean isInventoryReset() {
         List<Widget> inventory = Inventory.search().result();
         for (Widget item : inventory) {
-            if (!shouldKeep(Text.removeTags(item.getName()))) { // using our shouldKeep method, we can filter the items here to only include the ones we want to drop.
+            if (!shouldKeep(Text.removeTags(item.getName()))) { 
                 return false;
             }
         }
-        return true; // we will know that the inventory is reset because the inventory only contains items we want to keep
+        return true;
     }
 
     private void playerWait()
     {
-        if (client.getLocalPlayer().getWorldLocation() != startTile)
+        if (client.getLocalPlayer().getWorldLocation().getX() != startTile.getX() || client.getLocalPlayer().getWorldLocation().getY() != startTile.getY())
         {
             MousePackets.queueClickPacket();
             MovementPackets.queueMovement(startTile);
         }
+        else
+        {
+            DropItems();
+        }
     }
 
-    private String TrapToString()
+    private String TrapToString(boolean catched)
     {
         switch (config.trapType()){
             case BIRD_SNARE:
                 return "Bird snare";
+            case BOX_TRAP:
+                return catched ? "Shaking box" : "Box trap";
             default:
                 return "";
         }
