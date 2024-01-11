@@ -66,7 +66,9 @@ public class BobTheHunterPlugin extends Plugin {
     WorldPoint startTile;
     WorldPoint targetTile;
     WorldPoint playerTile;
+    int activeTraps = 0;
     String debugInfo = "";
+    boolean takeBreak = false;
 
     boolean resetStartTile = true;
 
@@ -102,7 +104,9 @@ public class BobTheHunterPlugin extends Plugin {
 
         playerTile = client.getLocalPlayer().getWorldLocation();
 
-        debugInfo = Integer.toString(GetActiveTraps().result().size());
+        activeTraps = GetActiveTraps().result().size() + (config.trapType() == TrapType.BOX_TRAP ? GetSuccessfulTraps().size() : 0);
+
+        debugInfo = Integer.toString(activeTraps);
 
         state = getNextState();
         handleState();
@@ -111,6 +115,7 @@ public class BobTheHunterPlugin extends Plugin {
     private void handleState() {
         switch (state) {
             case HANDLE_BREAK:
+                takeBreak = false;
                 breakHandler.startBreak(this);
                 timeout = 10;
                 break;
@@ -153,6 +158,9 @@ public class BobTheHunterPlugin extends Plugin {
         if (EthanApiPlugin.isMoving()) {
             return State.ANIMATING;
         }
+        if (breakHandler.shouldBreak(this)) {
+            takeBreak = true;
+        }
         if (timeout > 0) {
             return State.TIMEOUT;
         }
@@ -163,12 +171,9 @@ public class BobTheHunterPlugin extends Plugin {
         if (targetTile != null && !playerAtTarget()) {
             return State.MOVE_TO_TILE;
         }
-        if (GetActiveTraps().result().size() + (config.trapType() == TrapType.BOX_TRAP ? GetSuccessfulTraps().size() : 0) < config.trapCount())
+        if (GetActiveTraps().result().size() + (config.trapType() == TrapType.BOX_TRAP ? GetSuccessfulTraps().size() : 0) < config.trapCount() && !takeBreak)
         {
             return State.PLACE_TRAPS;
-        }
-        if (breakHandler.shouldBreak(this)) {
-            return State.HANDLE_BREAK;
         }
         if ((InventoryUtil.getItems().size() > 24 || state == State.DROP_ITEMS) && !isInventoryReset())
         {
@@ -181,6 +186,9 @@ public class BobTheHunterPlugin extends Plugin {
         if (!GetFailedTraps().isEmpty())
         {
             return State.FAILED_TRAPS;
+        }
+        if (takeBreak && activeTraps <= 0) {
+            return State.HANDLE_BREAK;
         }
         return State.WAIT;
     }
@@ -221,7 +229,26 @@ public class BobTheHunterPlugin extends Plugin {
         WorldPoint retPoint = new WorldPoint(startTile.getX(), startTile.getY(), startTile.getPlane());
         if (fiveTraps)
         {
-
+            switch (index)
+            {
+                case 0:
+                    retPoint = retPoint.dx(1);
+                    break;
+                case 1:
+                    retPoint = retPoint.dy(1);
+                    break;
+                case 2:
+                    retPoint = retPoint.dx(-1);
+                    break;
+                case 3:
+                    retPoint = retPoint.dx(1);
+                    retPoint = retPoint.dy(2);
+                    break;
+                case 4:
+                    retPoint = retPoint.dx(-1);
+                    retPoint = retPoint.dy(2);
+                    break;
+            }
         }
         else
         {
@@ -285,7 +312,7 @@ public class BobTheHunterPlugin extends Plugin {
 
             MousePackets.queueClickPacket();
             InventoryInteraction.useItem(trap.get(), "Lay");
-            timeout = 3;
+            timeout = RandomUtils.nextInt(3, 5);
         }
     }
 
