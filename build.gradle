@@ -14,7 +14,7 @@ allprojects {
         jcenter()
     }
 
-    def runeLiteVersion = '1.10.17.1'
+    def runeLiteVersion = '1.10.19'
 
     plugins.withType(JavaPlugin) {
         dependencies {
@@ -43,8 +43,10 @@ dependencies {
     testImplementation project(path: ':AutoChompy')
     compileOnly project(path: ':AutoTrapper')
     testImplementation project(path: ':AutoTrapper')
+
     //compileOnly project(path: ':AutoTitheFarm')
     //testImplementation project(path: ':AutoTitheFarm')
+
 
 //    compileOnly project(path: ':AutoMLM')
 //    testImplementation project(path: ':AutoMLM')
@@ -72,6 +74,7 @@ dependencies {
 //    Uncomment for fat jar
 
     implementation project(path: ':AutoAerial')
+    implementation project(path: ":AutoRuneDragons")
     implementation project(path: ':AutoBoner')
     implementation project(path: ':AutoChompy')
     implementation project(path: ':AutoCombat')
@@ -117,11 +120,11 @@ dependencies {
     implementation project(path: ':DropParty')
     implementation 'io.reactivex.rxjava3:rxjava:3.1.6'
 
-//
-//    compileOnly project(path: ':RooftopAgility')
-//    testImplementation project(path: ':RooftopAgility')
-//    compileOnly project(path: ':ItemCombiner')
-//    testImplementation project(path: ':ItemCombiner')
+
+    compileOnly project(path: ':RooftopAgility')
+    testImplementation project(path: ':RooftopAgility')
+    compileOnly project(path: ':ItemCombiner')
+    testImplementation project(path: ':ItemCombiner')
     compileOnly project(path: ':PowerSkiller')
     testImplementation project(path: ':PowerSkiller')
 
@@ -139,7 +142,7 @@ sourceSets {
 }
 
 group = 'com.piggyplugins'
-version = '1.0.19'
+version = '1.0.24'
 sourceCompatibility = "11"
 
 task FatJar(type: Jar) {
