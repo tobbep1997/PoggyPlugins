@@ -2,8 +2,8 @@ package com.piggyplugins.BobTheHunter;
 
 import net.runelite.client.config.*;
 
-@ConfigGroup("BobTheHunter")
-public interface BobTheHunterConfig extends Config {
+@ConfigGroup("BobTheBuilder")
+public interface BobTheBuilderConfig extends Config {
     @ConfigSection(
             name = "Tick Delays",
             description = "Configuration for delays added to skilling activities",
@@ -23,28 +23,34 @@ public interface BobTheHunterConfig extends Config {
     }
 
     @ConfigItem(
-            name = "Trap Type",
-            keyName = "trapType",
-            description = "Type of trap",
-            position = 3
+            name = "Option",
+            keyName = "option",
+            description = "",
+            position = 4
     )
-    default TrapType trapType() {
-        return TrapType.BIRD_SNARE;
+    default int option() {
+        return -1;
+    }
+    @ConfigItem(
+            name = "Items",
+            keyName = "items",
+            description = "",
+            position = 4
+    )
+    default String items() {
+        return "Oak plank";
     }
 
-    @Range(
-            min = 1,
-            max = 5
-    )
     @ConfigItem(
-            name = "Number of traps",
-            keyName = "trapCount",
-            description = "Number of traps to place",
-            position = 3
+            name = "Build",
+            keyName = "build",
+            description = "",
+            position = 4
     )
-    default int trapCount() {
-        return 1;
+    default String build() {
+        return "Larder";
     }
+
 
     @ConfigItem(
             name = "Tick Delay Min",
@@ -68,14 +74,6 @@ public interface BobTheHunterConfig extends Config {
         return 3;
     }
 
-    @ConfigItem(
-            name = "Keep Items",
-            keyName = "itemToKeep",
-            description = "Items you don't want dropped. Separate items by comma,no space. Good for UIM",
-            position = 3
-    )
-    default String itemsToKeep() {
-        return "coins,rune pouch,divine rune pouch,looting bag,clue scroll";
-    }
+
 
 }

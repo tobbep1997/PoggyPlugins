@@ -8,12 +8,12 @@ import net.runelite.client.ui.overlay.components.TitleComponent;
 
 import java.awt.*;
 
-public class BobTheHunterOverlay extends OverlayPanel {
+public class BobTheBuilderOverlay extends OverlayPanel {
 
-    private final BobTheHunterPlugin plugin;
+    private final BobTheBuilderPlugin plugin;
 
     @Inject
-    private BobTheHunterOverlay(BobTheHunterPlugin plugin) {
+    private BobTheBuilderOverlay(BobTheBuilderPlugin plugin) {
         super(plugin);
         this.plugin = plugin;
         setPosition(OverlayPosition.BOTTOM_LEFT);
@@ -25,7 +25,7 @@ public class BobTheHunterOverlay extends OverlayPanel {
     public Dimension render(Graphics2D graphics) {
         panelComponent.setPreferredSize(new Dimension(200, 320));
         panelComponent.getChildren().add(TitleComponent.builder()
-                .text("Bob The Hunter")
+                .text("Bob The Builder")
                 .color(new Color(255, 157, 249))
                 .build());
         panelComponent.getChildren().add(TitleComponent.builder()
@@ -41,9 +41,10 @@ public class BobTheHunterOverlay extends OverlayPanel {
         panelComponent.getChildren().add(LineComponent.builder()
                 .left("DEBUG: ")
                 .leftColor(new Color(255, 157, 249))
-                .right(plugin.debugInfo)
+                .right(plugin.debug)
                 .rightColor(Color.WHITE)
                 .build());
+
 
         return super.render(graphics);
     }

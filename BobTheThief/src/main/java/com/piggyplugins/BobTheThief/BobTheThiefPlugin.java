@@ -291,7 +291,6 @@ public class BobTheThiefPlugin extends Plugin {
         String npcName = config.objectToInteract();
         NPCs.search().withName(npcName).nearestToPlayer().ifPresent(npc -> {
             m_targetNPC = npc;
-
         });
     }
 

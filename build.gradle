@@ -79,6 +79,7 @@ dependencies {
     implementation project(path: ':AutoChompy')
     implementation project(path: ':AutoCombat')
     implementation project(path: ':AutoSmith')
+    implementation project(path: ':BobTheBuilder')
     implementation project(path: ':BobTheChef')
     implementation project(path: ':BobTheHunter')
     implementation project(path: ':BobTheSkiller')
