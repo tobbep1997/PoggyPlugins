@@ -8,6 +8,7 @@ import com.example.InteractionApi.InventoryInteraction;
 import com.example.InteractionApi.NPCInteraction;
 import com.example.InteractionApi.TileObjectInteraction;
 import com.google.inject.Provides;
+import com.piggyplugins.PiggyUtils.BreakHandler.ReflectBreakHandler;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.GameTick;
@@ -43,6 +44,8 @@ public class BobTheSkillerPlugin extends Plugin {
     private OverlayManager overlayManager;
     @Inject
     private BobTheSkillerOverlay overlay;
+    @Inject
+    private ReflectBreakHandler breakHandler;
     State state;
     boolean started;
 
@@ -54,6 +57,7 @@ public class BobTheSkillerPlugin extends Plugin {
     protected void startUp() throws Exception {
         bankPin = false;
         keyManager.registerKeyListener(toggle);
+        breakHandler.registerPlugin(this);
         this.overlayManager.add(overlay);
     }
 
@@ -61,6 +65,7 @@ public class BobTheSkillerPlugin extends Plugin {
     protected void shutDown() throws Exception {
         bankPin = false;
         keyManager.unregisterKeyListener(toggle);
+        breakHandler.unregisterPlugin(this);
         this.overlayManager.remove(overlay);
     }
 
@@ -71,7 +76,7 @@ public class BobTheSkillerPlugin extends Plugin {
 
     @Subscribe
     private void onGameTick(GameTick event) {
-        if (!EthanApiPlugin.loggedIn() || !started) {
+        if (!EthanApiPlugin.loggedIn() || !started || breakHandler.isBreakActive(this)) {
             // We do an early return if the user isn't logged in
             return;
         }
@@ -81,6 +86,10 @@ public class BobTheSkillerPlugin extends Plugin {
 
     private void handleState() {
         switch (state) {
+            case HANDLE_BREAK:
+                breakHandler.startBreak(this);
+                timeout = 10;
+                break;
             case BANK:
                 if (Widgets.search().withId(13959169).first().isPresent()) {
                     bankPin = true;
@@ -138,6 +147,11 @@ public class BobTheSkillerPlugin extends Plugin {
         if (EthanApiPlugin.isMoving() || client.getLocalPlayer().getAnimation() != -1) {
             // this is to prevent clicks while animating/moving.
             return State.ANIMATING;
+        }
+
+        if (breakHandler.shouldBreak(this))
+        {
+            return State.HANDLE_BREAK;
         }
 
         if (!hasTools()) {
@@ -299,5 +313,12 @@ public class BobTheSkillerPlugin extends Plugin {
             return;
         }
         started = !started;
+
+        if (!started) {
+            this.state = State.TIMEOUT;
+            breakHandler.stopPlugin(this);
+        } else {
+            breakHandler.startPlugin(this);
+        }
     }
 }

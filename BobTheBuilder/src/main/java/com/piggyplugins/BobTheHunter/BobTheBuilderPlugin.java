@@ -6,10 +6,13 @@ import com.example.EthanApiPlugin.Collections.query.PlayerQuery;
 import com.example.EthanApiPlugin.Collections.query.TileItemQuery;
 import com.example.EthanApiPlugin.Collections.query.TileObjectQuery;
 import com.example.EthanApiPlugin.EthanApiPlugin;
+import com.example.InteractionApi.BankInteraction;
 import com.example.InteractionApi.InventoryInteraction;
 import com.example.InteractionApi.TileObjectInteraction;
+import com.example.PacketUtils.WidgetInfoExtended;
 import com.example.Packets.*;
 import com.google.inject.Provides;
+import com.piggyplugins.PiggyUtils.API.BankUtil;
 import com.piggyplugins.PiggyUtils.API.InventoryUtil;
 import com.piggyplugins.PiggyUtils.API.PlayerUtil;
 import com.piggyplugins.PiggyUtils.API.TileItemUtil;
@@ -62,6 +65,7 @@ public class BobTheBuilderPlugin extends Plugin {
     WorldPoint targetTile;
     boolean takeBreak = false;
     public String debug = "";
+    public boolean atPOH = false;
 
 
     boolean resetStartTile = true;
@@ -94,6 +98,12 @@ public class BobTheBuilderPlugin extends Plugin {
             return;
         }
 
+        TileObjects.search().nameContains(config.build()).nearestToPlayer().ifPresentOrElse(tileObject -> {
+            atPOH = true;
+        }, () ->{
+            atPOH = false;
+        });
+
         state = getNextState();
         handleState();
     }
@@ -108,8 +118,16 @@ public class BobTheBuilderPlugin extends Plugin {
             case TIMEOUT:
                 timeout--;
                 break;
+            case RESTOCK:
+                Restock();
+
+                break;
             case TELEPORT_TO_HOUSE:
                 TeleportToHouse();
+                setTimeout();
+                break;
+            case TELEPORT_TO_BANK:
+                TeleportToVarrock();
                 setTimeout();
                 break;
             case BUILD:
@@ -133,36 +151,78 @@ public class BobTheBuilderPlugin extends Plugin {
         }
         if (hasItems())
         {
-            TileObjectQuery tileObjectQuery = TileObjects.search().nameContains(config.build());
-            if (tileObjectQuery.empty())
+            if (!atPOH)
                 return State.TELEPORT_TO_HOUSE;
-            else
-            {
-                TileObject tileObject = tileObjectQuery.nearestToPlayer().get();
-                ObjectComposition objectComposition = TileObjectQuery.getObjectComposition(tileObject);
-                List<String> actions = Arrays.asList(objectComposition.getActions());
 
-                if (actions.contains("Build"))
-                {
-                    return State.BUILD;
-                }
-                if (actions.contains("Remove"))
-                {
-                    return State.REMOVE;
-                }
+            TileObjectQuery tileObjectQuery = TileObjects.search().nameContains(config.build());
+            TileObject tileObject = tileObjectQuery.nearestToPlayer().get();
+            ObjectComposition objectComposition = TileObjectQuery.getObjectComposition(tileObject);
+            List<String> actions = Arrays.asList(objectComposition.getActions());
+
+            if (actions.contains("Build"))
+            {
+                return State.BUILD;
             }
+            if (actions.contains("Remove"))
+            {
+                return State.REMOVE;
+            }
+
+        }
+        else
+        {
+            if (atPOH)
+                return State.TELEPORT_TO_BANK;
+            else
+                return State.RESTOCK;
         }
 
         return State.TIMEOUT;
     }
 
+    private void Restock()
+    {
+        if (Bank.isOpen()) {
+            Optional<Widget> bankFood = BankUtil.nameContainsNoCase(config.items()).first();
+            bankFood.ifPresent(widget -> BankInteraction.withdrawX(widget, 24));
+            setTimeout();
+        }
+        else {
+            Optional<TileObject> bankBooth = TileObjects.search().filter(tileObject -> {
+                ObjectComposition objectComposition = TileObjectQuery.getObjectComposition(tileObject);
+                return getName().toLowerCase().contains("bank") ||
+                        Arrays.stream(objectComposition.getActions()).anyMatch(action -> action != null && action.toLowerCase().contains("bank"));
+            }).nearestToPlayer();
+
+            if (bankBooth.isPresent()) {
+
+                MousePackets.queueClickPacket();
+                TileObjectInteraction.interact(bankBooth.get(), "Bank");
+
+            }
+        }
+    }
+
     private void TeleportToHouse()
     {
-
+        Optional<Widget> teleportSpellIcon = Widgets.search().withId(WidgetInfoExtended.SPELL_TELEPORT_TO_HOUSE.getPackedId()).first();
+        if (teleportSpellIcon.isPresent()) {
+            MousePackets.queueClickPacket();
+            WidgetPackets.queueWidgetAction(teleportSpellIcon.get(), "Cast");
+        }
     }
     private void TeleportToVarrock()
     {
-
+        TileObjects.search().nameContains("Amulet of Glory").nearestToPlayer().ifPresentOrElse(tileObject -> {
+            MousePackets.queueClickPacket();
+            TileObjectInteraction.interact(tileObject, "Edgeville");
+        }, () -> {
+            Optional<Widget> teleportSpellIcon = Widgets.search().withId(WidgetInfoExtended.SPELL_VARROCK_TELEPORT.getPackedId()).first();
+            if (teleportSpellIcon.isPresent()) {
+                MousePackets.queueClickPacket();
+                WidgetPackets.queueWidgetAction(teleportSpellIcon.get(), "Cast");
+            }
+        });
     }
 
     private void Build()
@@ -170,10 +230,10 @@ public class BobTheBuilderPlugin extends Plugin {
         debug = "build";
         Widgets.search().withTextContains("Furniture Creation Menu").hiddenState(false).first().ifPresentOrElse(menu -> {
             debug = "Found menu";
-            Widgets.search().withTextContains("2").hiddenState(false).first().ifPresent(option ->{
+            Widgets.search().withId(30015490).first().ifPresent(option ->{
                 debug =  Integer.toString(option.getId());
                 MousePackets.queueClickPacket();
-                WidgetPackets.queueResumePause(option.getId(), -1);
+                WidgetPackets.queueResumePause(option.getId(), 2);
                 setTimeout();
             });
         }, () -> {

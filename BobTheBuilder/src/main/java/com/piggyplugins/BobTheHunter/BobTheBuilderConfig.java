@@ -23,6 +23,15 @@ public interface BobTheBuilderConfig extends Config {
     }
 
     @ConfigItem(
+            name = "ID",
+            keyName = "id",
+            description = "",
+            position = 4
+    )
+    default int id() {
+        return 30015493;
+    }
+    @ConfigItem(
             name = "Option",
             keyName = "option",
             description = "",
@@ -30,6 +39,16 @@ public interface BobTheBuilderConfig extends Config {
     )
     default int option() {
         return -1;
+    }
+
+    @ConfigItem(
+            name = "UseOption",
+            keyName = "useOption",
+            description = "",
+            position = 4
+    )
+    default boolean useOption() {
+        return true;
     }
     @ConfigItem(
             name = "Items",

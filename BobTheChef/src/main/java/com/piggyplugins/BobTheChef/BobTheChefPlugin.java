@@ -1,6 +1,8 @@
 package com.piggyplugins.BobTheChef;
 
+import com.example.EthanApiPlugin.Collections.Inventory;
 import com.example.EthanApiPlugin.Collections.TileObjects;
+import com.example.EthanApiPlugin.Collections.Widgets;
 import com.example.EthanApiPlugin.EthanApiPlugin;
 import com.example.InteractionApi.PrayerInteraction;
 import com.example.InteractionApi.TileObjectInteraction;
@@ -23,6 +25,7 @@ import net.runelite.client.util.HotkeyListener;
 
 import com.google.inject.Inject;
 import org.apache.commons.lang3.RandomUtils;
+import org.pushingpixels.substance.internal.colorscheme.InvertedColorScheme;
 
 import java.awt.event.KeyEvent;
 
@@ -94,7 +97,7 @@ public class BobTheChefPlugin extends Plugin {
                 timeout--;
                 break;
             case COOK:
-
+                cook();
                 break;
             case BANK:
 
@@ -114,14 +117,14 @@ public class BobTheChefPlugin extends Plugin {
         if (breakHandler.shouldBreak(this)) {
             return State.HANDLE_BREAK;
         }
-
-        if (InventoryUtil.getItem(config.rawFood()).isPresent())
+        if (Inventory.search().withName(config.rawFood()).first().isEmpty())
         {
-            return State.COOK;
-        }
-        else {
             return State.BANK;
         }
+
+        return State.COOK;
+
+
     }
 
     private void cook()
@@ -137,14 +140,20 @@ public class BobTheChefPlugin extends Plugin {
             return;
         }
 
-        InventoryUtil.getItem(config.rawFood()).get();
-        
-        TileObjectInteraction.interact(cookingRangeObject, "Cook");
+        Widgets.search().withText("What would you like to cook").hiddenState(false).first().ifPresentOrElse(menu -> {
+            //Widgets.search().withId(17694735).hiddenState(false).first().ifPresent(widget -> {
+            Widgets.search().withText(config.finishedFood()).hiddenState(false).first().ifPresent(widget -> {
+                MousePackets.queueClickPacket();
+                WidgetPackets.queueResumePause(widget.getId(), -1);
+            });
+        }, () ->{
+            Inventory.search().withName(config.rawFood()).first().ifPresent(item -> {
+                MousePackets.queueClickPacket();
+                TileObjectInteraction.interact(cookingRangeObject, "Cook");
+            });
+        });
 
-        MousePackets.queueClickPacket();
-        MousePackets.queueClickPacket();
-        //TileItemPackets.queueWidgetOnTileItem(cookingRangeObject, InventoryUtil.getItem(config.rawFood()).get(), false);
-        //WidgetPackets.queueWidgetOnWidget(cookingRangeObject, InventoryUtil.getItem(config.rawFood()).get());
+
     }
     private void bank()
     {
