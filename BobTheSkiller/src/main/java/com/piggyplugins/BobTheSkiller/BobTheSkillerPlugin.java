@@ -7,6 +7,7 @@ import com.example.InteractionApi.BankInventoryInteraction;
 import com.example.InteractionApi.InventoryInteraction;
 import com.example.InteractionApi.NPCInteraction;
 import com.example.InteractionApi.TileObjectInteraction;
+import com.example.Packets.MousePackets;
 import com.google.inject.Provides;
 import com.piggyplugins.PiggyUtils.BreakHandler.ReflectBreakHandler;
 import net.runelite.api.*;
@@ -97,16 +98,19 @@ public class BobTheSkillerPlugin extends Plugin {
                 }
                 if (Widgets.search().withId(786445).first().isEmpty()) {
                     TileObjects.search().withAction("Bank").nearestToPlayer().ifPresent(tileObject -> {
+                        MousePackets.queueClickPacket();
                         TileObjectInteraction.interact(tileObject, "Bank");
                         return;
                     });
                     NPCs.search().withAction("Bank").nearestToPlayer().ifPresent(npc -> {
                         if (EthanApiPlugin.pathToGoal(npc.getWorldLocation(), new HashSet<>()) != null) {
+                            MousePackets.queueClickPacket();
                             NPCInteraction.interact(npc, "Bank");
                         }
                         return;
                     });
                     TileObjects.search().withName("Bank chest").nearestToPlayer().ifPresent(tileObject -> {
+                        MousePackets.queueClickPacket();
                         TileObjectInteraction.interact(tileObject, "Use");
                         return;
                     });

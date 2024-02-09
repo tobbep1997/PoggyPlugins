@@ -38,6 +38,12 @@ public class BobTheChefOverlay extends OverlayPanel {
                 .right(plugin.state==null || !plugin.started ? "STOPPED" : plugin.state.name())
                 .rightColor(Color.WHITE)
                 .build());
+        panelComponent.getChildren().add(LineComponent.builder()
+                .left("DEBUG: ")
+                .leftColor(new Color(255, 157, 249))
+                .right(plugin.debug)
+                .rightColor(Color.WHITE)
+                .build());
 
         return super.render(graphics);
     }

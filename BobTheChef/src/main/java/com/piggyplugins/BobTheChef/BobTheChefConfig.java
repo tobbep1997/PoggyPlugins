@@ -42,6 +42,36 @@ public interface BobTheChefConfig extends Config {
         return "";
     }
 
+    @ConfigItem(
+            name = "Keyboard key",
+            keyName = "keyboardKey",
+            description = "",
+            position = 4
+    )
+    default int keyboardKey() {
+        return 1;
+    }
+
+    @ConfigItem(
+            name = "One Tick",
+            keyName = "oneTick",
+            description = "",
+            position = 4
+    )
+    default boolean oneTick() {
+        return false;
+    }
+
+    @Range(min = 0, max = 100)
+    @ConfigItem(
+            name = "One Tick Success rate %",
+            keyName = "oneTickSuccessRate",
+            description = "",
+            position = 4
+    )
+    default int oneTickSuccessRate() {
+        return 95;
+    }
 
     @ConfigItem(
             name = "Tick Delay Min",

@@ -1,19 +1,20 @@
 package com.piggyplugins.BobTheChef;
 
-import com.example.EthanApiPlugin.Collections.Inventory;
-import com.example.EthanApiPlugin.Collections.TileObjects;
-import com.example.EthanApiPlugin.Collections.Widgets;
+import com.example.EthanApiPlugin.Collections.*;
+import com.example.EthanApiPlugin.Collections.query.TileObjectQuery;
 import com.example.EthanApiPlugin.EthanApiPlugin;
-import com.example.InteractionApi.PrayerInteraction;
-import com.example.InteractionApi.TileObjectInteraction;
+import com.example.InteractionApi.*;
 import com.example.Packets.MousePackets;
+import com.example.Packets.ObjectPackets;
 import com.example.Packets.TileItemPackets;
 import com.example.Packets.WidgetPackets;
 import com.google.inject.Provides;
+import com.piggyplugins.PiggyUtils.API.BankUtil;
 import com.piggyplugins.PiggyUtils.API.InventoryUtil;
 import com.piggyplugins.PiggyUtils.BreakHandler.ReflectBreakHandler;
 import net.runelite.api.*;
 import net.runelite.api.events.GameTick;
+import net.runelite.api.widgets.Widget;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.input.KeyManager;
@@ -28,6 +29,10 @@ import org.apache.commons.lang3.RandomUtils;
 import org.pushingpixels.substance.internal.colorscheme.InvertedColorScheme;
 
 import java.awt.event.KeyEvent;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.Random;
 
 
 @PluginDescriptor(
@@ -50,7 +55,13 @@ public class BobTheChefPlugin extends Plugin {
     private ReflectBreakHandler breakHandler;
     State state;
     boolean started;
+    private boolean menuOpen = false;
     private int timeout;
+    public String debug = "";
+
+    private static final int COOK_ACTION_WIDGET = 17694735;
+    private static final int OVEN_ID = 21302;
+    private static final int CHEST_ID = 21301;
 
     TileObject cookingRangeObject = null;
     TileObject bankObject = null;
@@ -89,6 +100,9 @@ public class BobTheChefPlugin extends Plugin {
 
     private void handleState() {
         switch (state) {
+            case ANIMATING:
+                timeout = 1;
+                break;
             case HANDLE_BREAK:
                 breakHandler.startBreak(this);
                 timeout = 10;
@@ -100,13 +114,13 @@ public class BobTheChefPlugin extends Plugin {
                 cook();
                 break;
             case BANK:
-
+                bank();
                 break;
         }
     }
 
     private State getNextState() {
-        if (EthanApiPlugin.isMoving()) {
+        if (EthanApiPlugin.isMoving() || client.getLocalPlayer().getAnimation() != -1 && !config.oneTick()) {
             return State.ANIMATING;
         }
 
@@ -117,8 +131,7 @@ public class BobTheChefPlugin extends Plugin {
         if (breakHandler.shouldBreak(this)) {
             return State.HANDLE_BREAK;
         }
-        if (Inventory.search().withName(config.rawFood()).first().isEmpty())
-        {
+        if (Inventory.search().withName(config.rawFood()).first().isEmpty()) {
             return State.BANK;
         }
 
@@ -140,24 +153,94 @@ public class BobTheChefPlugin extends Plugin {
             return;
         }
 
-        Widgets.search().withText("What would you like to cook").hiddenState(false).first().ifPresentOrElse(menu -> {
-            //Widgets.search().withId(17694735).hiddenState(false).first().ifPresent(widget -> {
-            Widgets.search().withText(config.finishedFood()).hiddenState(false).first().ifPresent(widget -> {
-                MousePackets.queueClickPacket();
-                WidgetPackets.queueResumePause(widget.getId(), -1);
-            });
-        }, () ->{
-            Inventory.search().withName(config.rawFood()).first().ifPresent(item -> {
-                MousePackets.queueClickPacket();
-                TileObjectInteraction.interact(cookingRangeObject, "Cook");
-            });
-        });
+        if (config.oneTick())
+        {
+            if (RandomUtils.nextInt(0, 100) < config.oneTickSuccessRate())
+                oneTick();
+            return;
+        }
 
+        if (!config.oneTick())
+        {
+            Widgets.search().withTextContains("then click an item").hiddenState(false).first().ifPresentOrElse(menu -> {
+                debug = "Menu open";
+                Widgets.search().withId(17694735).first().ifPresent(widget -> {
+                    debug = "Interact";
+                    MousePackets.queueClickPacket();
+                    WidgetPackets.queueResumePause(widget.getId(), Inventory.search().withName(config.rawFood()).result().size());
+                    setTimeout();
+                });
+            }, () ->{
+                debug = "Find stow";
+                Inventory.search().withName(config.rawFood()).first().ifPresent(item -> {
+                    MousePackets.queueClickPacket();
+                    TileObjectInteraction.interact(cookingRangeObject, "Cook");
+                    timeout=3;
+                });
+            });
+        }
+    }
 
+    private void oneTick()
+    {
+        List<Widget> karambwani = Inventory.search().withId(ItemID.RAW_KARAMBWAN).result();
+        if (client.getWidget(COOK_ACTION_WIDGET) != null) {
+            MousePackets.queueClickPacket();
+            WidgetPackets.queueResumePause(COOK_ACTION_WIDGET, 1);
+        }
+
+        if (cookingRangeObject != null) {
+            if (!karambwani.isEmpty()) {
+                Widget karamb = karambwani.get(karambwani.size() - 1);
+                MousePackets.queueClickPacket();
+                ObjectPackets.queueWidgetOnTileObject(karamb, cookingRangeObject);
+            }
+        }
     }
     private void bank()
     {
+        if (Bank.isOpen())
+        {
+            List<Widget> bankInv = BankInventory.search().result();
+            for (Widget item : bankInv) {
+                BankInventoryInteraction.useItem(item, "Deposit-All");
+            }
 
+            Optional<Widget> bankFood = BankUtil.nameContainsNoCase(config.rawFood()).first();
+            bankFood.ifPresentOrElse(widget -> BankInteraction.withdrawX(widget, 28), () -> {
+                started = false;
+                this.state = State.TIMEOUT;
+                breakHandler.stopPlugin(this);
+            });
+            setTimeout();
+        }
+        else {
+            NPCs.search().withAction("Bank").nearestToPlayer().ifPresent(npc -> {
+                MousePackets.queueClickPacket();
+                NPCInteraction.interact(npc.getId(), "Bank");
+                return;
+            });
+
+            Optional<TileObject> bankBooth = TileObjects.search().filter(tileObject -> {
+                ObjectComposition objectComposition = TileObjectQuery.getObjectComposition(tileObject);
+                return getName().toLowerCase().contains("bank") ||
+                        Arrays.stream(objectComposition.getActions()).anyMatch(action -> action != null && action.toLowerCase().contains("bank"));
+            }).nearestToPlayer();
+
+            if (bankBooth.isPresent()) {
+
+                MousePackets.queueClickPacket();
+                TileObjectInteraction.interact(bankBooth.get(), "Bank");
+                return;
+            }
+
+            TileObjects.search().withName("Bank chest").nearestToPlayer().ifPresent(tileObject -> {
+                MousePackets.queueClickPacket();
+                TileObjectInteraction.interact(tileObject, "Use");
+                return;
+            });
+
+        }
     }
 
     private void setTimeout() {
