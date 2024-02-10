@@ -101,8 +101,14 @@ public class BobTheBuilderPlugin extends Plugin {
         TileObjects.search().nameContains(config.build()).nearestToPlayer().ifPresentOrElse(tileObject -> {
             atPOH = true;
         }, () ->{
-            atPOH = false;
+            TileObjects.search().nameContains(config.remove()).nearestToPlayer().ifPresentOrElse(tileObject -> {
+                atPOH = true;
+            }, () ->{
+                atPOH = false;
+            });
         });
+
+        debug = atPOH ? "At home" : "Not at home";
 
         state = getNextState();
         handleState();
@@ -154,18 +160,38 @@ public class BobTheBuilderPlugin extends Plugin {
             if (!atPOH)
                 return State.TELEPORT_TO_HOUSE;
 
-            TileObjectQuery tileObjectQuery = TileObjects.search().nameContains(config.build());
-            TileObject tileObject = tileObjectQuery.nearestToPlayer().get();
-            ObjectComposition objectComposition = TileObjectQuery.getObjectComposition(tileObject);
-            List<String> actions = Arrays.asList(objectComposition.getActions());
-
-            if (actions.contains("Build"))
             {
-                return State.BUILD;
+                TileObjectQuery tileObjectQuery = TileObjects.search().nameContains(config.build());
+                if (tileObjectQuery.nearestToPlayer().isPresent())
+                {
+                    TileObject tileObject = tileObjectQuery.nearestToPlayer().get();
+                    ObjectComposition objectComposition = TileObjectQuery.getObjectComposition(tileObject);
+                    List<String> actions = Arrays.asList(objectComposition.getActions());
+                    if (actions.contains("Build"))
+                    {
+                        return State.BUILD;
+                    }
+                    debug = "Found " + config.build();
+                }
+                else
+                    debug = "Can't find " + config.build();
             }
-            if (actions.contains("Remove"))
+
             {
-                return State.REMOVE;
+                TileObjectQuery tileObjectQuery = TileObjects.search().nameContains(config.remove());
+                if (tileObjectQuery.nearestToPlayer().isPresent())
+                {
+                    TileObject tileObject = tileObjectQuery.nearestToPlayer().get();
+                    ObjectComposition objectComposition = TileObjectQuery.getObjectComposition(tileObject);
+                    List<String> actions = Arrays.asList(objectComposition.getActions());
+                    if (actions.contains("Remove"))
+                    {
+                        return State.REMOVE;
+                    }
+                    debug = "Found " + config.remove();
+                }
+                else
+                    debug = "Can't find " + config.remove();
             }
 
         }
@@ -198,7 +224,6 @@ public class BobTheBuilderPlugin extends Plugin {
 
                 MousePackets.queueClickPacket();
                 TileObjectInteraction.interact(bankBooth.get(), "Bank");
-
             }
         }
     }
@@ -233,7 +258,7 @@ public class BobTheBuilderPlugin extends Plugin {
             Widgets.search().withId(30015490).first().ifPresent(option ->{
                 debug =  Integer.toString(option.getId());
                 MousePackets.queueClickPacket();
-                WidgetPackets.queueResumePause(option.getId(), 2);
+                WidgetPackets.queueResumePause(option.getId(), config.option());
                 setTimeout();
             });
         }, () -> {
@@ -262,7 +287,7 @@ public class BobTheBuilderPlugin extends Plugin {
                 setTimeout();
             });
         }, () -> {
-            TileObjects.search().nameContains(config.build()).nearestToPlayer().ifPresent(tileObject -> {
+            TileObjects.search().nameContains(config.remove()).nearestToPlayer().ifPresent(tileObject -> {
                 ObjectComposition objectComposition = TileObjectQuery.getObjectComposition(tileObject);
                 List<String> actions = Arrays.asList(objectComposition.getActions());
                 if (actions.contains("Remove"))
