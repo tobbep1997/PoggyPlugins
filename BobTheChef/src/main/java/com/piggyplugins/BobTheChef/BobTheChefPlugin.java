@@ -26,7 +26,6 @@ import net.runelite.client.util.HotkeyListener;
 
 import com.google.inject.Inject;
 import org.apache.commons.lang3.RandomUtils;
-import org.pushingpixels.substance.internal.colorscheme.InvertedColorScheme;
 
 import java.awt.event.KeyEvent;
 import java.util.Arrays;

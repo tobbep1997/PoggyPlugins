@@ -92,7 +92,7 @@ public class PowerSkillerPlugin extends Plugin {
                         return;
                     });
                     NPCs.search().withAction("Bank").nearestToPlayer().ifPresent(npc -> {
-                        if (EthanApiPlugin.pathToGoal(npc.getWorldLocation(), new HashSet<>()) != null) {
+                        if (EthanApiPlugin.pathToGoalFromPlayerUsingCustomDangerous(npc.getWorldLocation(), new HashSet<>()) != null) {
                             NPCInteraction.interact(npc, "Bank");
                         }
                         return;
