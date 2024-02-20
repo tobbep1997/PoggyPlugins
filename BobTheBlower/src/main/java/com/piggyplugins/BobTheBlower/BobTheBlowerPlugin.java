@@ -7,6 +7,7 @@ import com.example.EthanApiPlugin.Collections.query.TileItemQuery;
 import com.example.EthanApiPlugin.Collections.query.TileObjectQuery;
 import com.example.EthanApiPlugin.EthanApiPlugin;
 import com.example.InteractionApi.BankInteraction;
+import com.example.InteractionApi.BankInventoryInteraction;
 import com.example.InteractionApi.InventoryInteraction;
 import com.example.InteractionApi.TileObjectInteraction;
 import com.example.PacketUtils.WidgetInfoExtended;
@@ -114,14 +115,16 @@ public class BobTheBlowerPlugin extends Plugin {
                 break;
             case RESTOCK:
                 Restock();
-
+                break;
+            case BLOW:
+                Blow();
                 break;
 
         }
     }
 
     private State getNextState() {
-        if (EthanApiPlugin.isMoving()) {
+        if (EthanApiPlugin.isMoving() || client.getLocalPlayer().getAnimation() != -1) {
             return State.ANIMATING;
         }
         if (breakHandler.shouldBreak(this)) {
@@ -130,16 +133,58 @@ public class BobTheBlowerPlugin extends Plugin {
         if (timeout > 0) {
             return State.TIMEOUT;
         }
+        if (hasItems())
+        {
+            return State.BLOW;
+        }
+        else
+        {
+            return State.RESTOCK;
+        }
+    }
 
 
-        return State.TIMEOUT;
+    private void Blow()
+    {
+        Widget potionWidget = client.getWidget(17694734);
+        if (potionWidget != null && !potionWidget.isHidden()) {
+            MousePackets.queueClickPacket();
+            WidgetPackets.queueResumePause(17694734 + config.option(), config.items2Amount());
+            return;
+        }
+
+        Widget itemOne = Inventory.search().filter(item -> item.getName().contains(config.items1())).first().get();
+        Widget itemTwo = Inventory.search().filter(item -> item.getName().contains(config.items2())).first().get();
+
+        MousePackets.queueClickPacket();
+        MousePackets.queueClickPacket();
+        WidgetPackets.queueWidgetOnWidget(itemOne, itemTwo);
     }
 
     private void Restock()
     {
         if (Bank.isOpen()) {
-            Optional<Widget> bankFood = BankUtil.nameContainsNoCase(config.items()).first();
-            bankFood.ifPresent(widget -> BankInteraction.withdrawX(widget, 24));
+            List<Widget> bankInv = BankInventory.search().result();
+            for (Widget item : bankInv) {
+                MousePackets.queueClickPacket();
+                BankInventoryInteraction.useItem(item, "Deposit-All");
+            }
+
+            BankUtil.nameContainsNoCase(config.items1()).first().ifPresentOrElse(widget ->
+                        BankInteraction.withdrawX(widget, config.items1Amount()),
+                    () -> {
+                        started = false;
+                        this.state = State.TIMEOUT;
+                        breakHandler.stopPlugin(this);
+            });
+
+            BankUtil.nameContainsNoCase(config.items2()).first().ifPresentOrElse(widget ->
+                            BankInteraction.withdrawX(widget, config.items2Amount()),
+                    () -> {
+                        started = false;
+                        this.state = State.TIMEOUT;
+                        breakHandler.stopPlugin(this);
+                    });
             setTimeout();
         }
         else {
@@ -186,7 +231,7 @@ public class BobTheBlowerPlugin extends Plugin {
 
     private boolean hasItems()
     {
-        String[] items = config.items().split(",");
+        String[] items = { config.items1(), config.items2()};
         boolean hasItems = true;
         for (int i = 0; i < items.length; i++) {
             if (!InventoryUtil.hasItem(items[i]))

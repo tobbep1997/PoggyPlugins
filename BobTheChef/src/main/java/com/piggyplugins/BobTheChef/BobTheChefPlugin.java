@@ -202,6 +202,7 @@ public class BobTheChefPlugin extends Plugin {
         {
             List<Widget> bankInv = BankInventory.search().result();
             for (Widget item : bankInv) {
+                MousePackets.queueClickPacket();
                 BankInventoryInteraction.useItem(item, "Deposit-All");
             }
 

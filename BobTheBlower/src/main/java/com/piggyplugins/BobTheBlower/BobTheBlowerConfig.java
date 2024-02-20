@@ -12,11 +12,19 @@ public interface BobTheBlowerConfig extends Config {
     )
     String tickDelaySection = "Tick Delays";
 
+    @ConfigSection(
+            name = "Items selection",
+            description = "Configuration for items",
+            position = 2
+
+    )
+    String itemSelection = "Item selection";
+
     @ConfigItem(
             keyName = "toggle",
             name = "Toggle",
             description = "",
-            position = -2
+            position = 1
     )
     default Keybind toggle() {
         return Keybind.NOT_SET;
@@ -26,6 +34,7 @@ public interface BobTheBlowerConfig extends Config {
             name = "Option",
             keyName = "option",
             description = "",
+
             position = 4
     )
     default int option() {
@@ -33,32 +42,45 @@ public interface BobTheBlowerConfig extends Config {
     }
 
     @ConfigItem(
-            name = "Items",
-            keyName = "items",
+            name = "Item 1 / Tool",
+            keyName = "items1",
             description = "",
-            position = 4
+            section = itemSelection,
+            position = 3
     )
-    default String items() {
-        return "Oak plank";
+    default String items1() {
+        return "Molten glass";
+    }
+    @ConfigItem(
+            name = "Item 1 amount",
+            keyName = "items1Amount",
+            description = "",
+            section = itemSelection,
+            position = 3
+    )
+    default int items1Amount() {
+        return 1;
     }
 
     @ConfigItem(
-            name = "Build",
-            keyName = "build",
+            name = "Item 2",
+            keyName = "items2",
             description = "",
+            section = itemSelection,
             position = 4
     )
-    default String build() {
-        return "Larder";
+    default String items2() {
+        return "Molten glass";
     }
     @ConfigItem(
-            name = "Remove",
-            keyName = "remove",
+            name = "Item 2 amount",
+            keyName = "items2Amount",
             description = "",
+            section = itemSelection,
             position = 4
     )
-    default String remove() {
-        return "Larder";
+    default int items2Amount() {
+        return 1;
     }
 
 
