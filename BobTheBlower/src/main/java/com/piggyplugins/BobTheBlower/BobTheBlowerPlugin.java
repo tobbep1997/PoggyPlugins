@@ -1,22 +1,16 @@
 package com.piggyplugins.BobTheBlower;
 
 import com.example.EthanApiPlugin.Collections.*;
-import com.example.EthanApiPlugin.Collections.query.ItemQuery;
-import com.example.EthanApiPlugin.Collections.query.PlayerQuery;
-import com.example.EthanApiPlugin.Collections.query.TileItemQuery;
 import com.example.EthanApiPlugin.Collections.query.TileObjectQuery;
 import com.example.EthanApiPlugin.EthanApiPlugin;
 import com.example.InteractionApi.BankInteraction;
 import com.example.InteractionApi.BankInventoryInteraction;
-import com.example.InteractionApi.InventoryInteraction;
 import com.example.InteractionApi.TileObjectInteraction;
 import com.example.PacketUtils.WidgetInfoExtended;
 import com.example.Packets.*;
 import com.google.inject.Provides;
 import com.piggyplugins.PiggyUtils.API.BankUtil;
 import com.piggyplugins.PiggyUtils.API.InventoryUtil;
-import com.piggyplugins.PiggyUtils.API.PlayerUtil;
-import com.piggyplugins.PiggyUtils.API.TileItemUtil;
 import com.piggyplugins.PiggyUtils.BreakHandler.ReflectBreakHandler;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
@@ -25,17 +19,14 @@ import net.runelite.api.widgets.Widget;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.input.KeyManager;
-import net.runelite.client.menus.WidgetMenuOption;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.HotkeyListener;
 
 import com.google.inject.Inject;
-import net.runelite.client.util.Text;
 import org.apache.commons.lang3.RandomUtils;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -66,7 +57,7 @@ public class BobTheBlowerPlugin extends Plugin {
     WorldPoint targetTile;
     boolean takeBreak = false;
     public String debug = "";
-    public boolean atPOH = false;
+    public boolean blowing = false;
 
 
     boolean resetStartTile = true;
@@ -105,6 +96,9 @@ public class BobTheBlowerPlugin extends Plugin {
 
     private void handleState() {
         switch (state) {
+            case ANIMATING:
+                timeout = 5;
+                break;
             case HANDLE_BREAK:
                 takeBreak = false;
                 breakHandler.startBreak(this);
@@ -114,6 +108,7 @@ public class BobTheBlowerPlugin extends Plugin {
                 timeout--;
                 break;
             case RESTOCK:
+                blowing = false;
                 Restock();
                 break;
             case BLOW:
@@ -128,12 +123,12 @@ public class BobTheBlowerPlugin extends Plugin {
             return State.ANIMATING;
         }
         if (breakHandler.shouldBreak(this)) {
-            takeBreak = true;
+            return State.HANDLE_BREAK;
         }
         if (timeout > 0) {
             return State.TIMEOUT;
         }
-        if (hasItems())
+        if (hasItems() && !blowing)
         {
             return State.BLOW;
         }
@@ -146,19 +141,26 @@ public class BobTheBlowerPlugin extends Plugin {
 
     private void Blow()
     {
-        Widget potionWidget = client.getWidget(17694734);
-        if (potionWidget != null && !potionWidget.isHidden()) {
-            MousePackets.queueClickPacket();
-            WidgetPackets.queueResumePause(17694734 + config.option(), config.items2Amount());
-            return;
-        }
 
-        Widget itemOne = Inventory.search().filter(item -> item.getName().contains(config.items1())).first().get();
-        Widget itemTwo = Inventory.search().filter(item -> item.getName().contains(config.items2())).first().get();
-
-        MousePackets.queueClickPacket();
-        MousePackets.queueClickPacket();
-        WidgetPackets.queueWidgetOnWidget(itemOne, itemTwo);
+        Widgets.search().withTextContains("then click an item").hiddenState(false).first().ifPresentOrElse(menu -> {
+            debug = "Menu open";
+            Widgets.search().withId(17694735).first().ifPresent(widget -> {
+                debug = "Interact";
+                MousePackets.queueClickPacket();
+                WidgetPackets.queueResumePause(widget.getId() + config.option(), Inventory.search().withName(config.items2()).result().size());
+                blowing = true;
+                setTimeout();
+            });
+        }, () ->{
+            debug = "Find stow";
+            Inventory.search().withName(config.items1()).first().ifPresent(item1 -> {
+                Inventory.search().withName(config.items2()).first().ifPresent(item2 -> {
+                    MousePackets.queueClickPacket();
+                    MousePackets.queueClickPacket();
+                    WidgetPackets.queueWidgetOnWidget(item1, item2);
+                });
+            });
+        });
     }
 
     private void Restock()
@@ -201,34 +203,6 @@ public class BobTheBlowerPlugin extends Plugin {
             }
         }
     }
-
-    private void TeleportToHouse()
-    {
-        Optional<Widget> teleportSpellIcon = Widgets.search().withId(WidgetInfoExtended.SPELL_TELEPORT_TO_HOUSE.getPackedId()).first();
-        if (teleportSpellIcon.isPresent()) {
-            MousePackets.queueClickPacket();
-            WidgetPackets.queueWidgetAction(teleportSpellIcon.get(), "Cast");
-        }
-    }
-    private void TeleportToVarrock()
-    {
-        TileObjects.search().nameContains("Amulet of Glory").nearestToPlayer().ifPresentOrElse(tileObject -> {
-            MousePackets.queueClickPacket();
-            TileObjectInteraction.interact(tileObject, "Edgeville");
-        }, () -> {
-            Optional<Widget> teleportSpellIcon = Widgets.search().withId(WidgetInfoExtended.SPELL_VARROCK_TELEPORT.getPackedId()).first();
-            if (teleportSpellIcon.isPresent()) {
-                MousePackets.queueClickPacket();
-                WidgetPackets.queueWidgetAction(teleportSpellIcon.get(), "Cast");
-            }
-        });
-    }
-
-    private boolean playerAtTarget()
-    {
-        return client.getLocalPlayer().getWorldLocation().getX() == targetTile.getX() && client.getLocalPlayer().getWorldLocation().getY() == targetTile.getY();
-    }
-
     private boolean hasItems()
     {
         String[] items = { config.items1(), config.items2()};

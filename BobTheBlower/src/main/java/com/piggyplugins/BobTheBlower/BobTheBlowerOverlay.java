@@ -25,7 +25,7 @@ public class BobTheBlowerOverlay extends OverlayPanel {
     public Dimension render(Graphics2D graphics) {
         panelComponent.setPreferredSize(new Dimension(200, 320));
         panelComponent.getChildren().add(TitleComponent.builder()
-                .text("Bob The Builder")
+                .text("Bob The Blower")
                 .color(new Color(255, 157, 249))
                 .build());
         panelComponent.getChildren().add(TitleComponent.builder()
@@ -42,6 +42,12 @@ public class BobTheBlowerOverlay extends OverlayPanel {
                 .left("DEBUG: ")
                 .leftColor(new Color(255, 157, 249))
                 .right(plugin.debug)
+                .rightColor(Color.WHITE)
+                .build());
+        panelComponent.getChildren().add(LineComponent.builder()
+                .left("BLOWING: ")
+                .leftColor(new Color(255, 157, 249))
+                .right(plugin.blowing ? "BLOWING" : "Single")
                 .rightColor(Color.WHITE)
                 .build());
 

@@ -4,7 +4,6 @@ public enum State {
     ANIMATING,
     TIMEOUT,
     HANDLE_BREAK,
-
     RESTOCK,
     BLOW
 }
