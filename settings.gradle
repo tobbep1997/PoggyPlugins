@@ -51,5 +51,7 @@ include 'BobTheSkiller'
 include 'BobTheBuilder'
 include 'AutoRuneDragons'
 include 'AutoTitheFarm'
+include 'StrategyExample'
+include 'BetterProfiles'
 
 
