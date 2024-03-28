@@ -103,7 +103,7 @@ public class BobTheSkillerPlugin extends Plugin {
                         return;
                     });
                     NPCs.search().withAction("Bank").nearestToPlayer().ifPresent(npc -> {
-                        if (EthanApiPlugin.pathToGoalFromPlayerUsingCustomDangerous(npc.getWorldLocation(), new HashSet<>()) != null) {
+                        if (EthanApiPlugin.canPathToTile(npc.getWorldLocation()).isReachable()) {
                             MousePackets.queueClickPacket();
                             NPCInteraction.interact(npc, "Bank");
                         }

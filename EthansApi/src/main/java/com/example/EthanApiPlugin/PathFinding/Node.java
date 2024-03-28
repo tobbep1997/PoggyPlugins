@@ -6,16 +6,14 @@ public class Node {
     WorldPoint data;
     Node previous;
 
-    public Node(WorldPoint data) {
+    Node(WorldPoint data) {
         this.data = data;
     }
-
-    Node() {
+    Node(){
         this.data = null;
         this.previous = null;
     }
-
-    public Node(WorldPoint data, Node previous) {
+    Node(WorldPoint data, Node previous) {
         this.data = data;
         this.previous = previous;
     }
@@ -28,7 +26,7 @@ public class Node {
         return previous;
     }
 
-    public void setNode(WorldPoint data, Node previous) {
+    public void setNode(WorldPoint data, Node previous){
         this.data = data;
         this.previous = previous;
     }

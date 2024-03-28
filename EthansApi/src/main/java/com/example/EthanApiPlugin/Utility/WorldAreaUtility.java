@@ -1,6 +1,10 @@
 package com.example.EthanApiPlugin.Utility;
 
-import net.runelite.api.*;
+import net.runelite.api.CollisionData;
+import net.runelite.api.CollisionDataFlag;
+import net.runelite.api.GameObject;
+import net.runelite.api.Point;
+import net.runelite.api.TileObject;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;

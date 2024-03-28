@@ -224,7 +224,13 @@ public class BobTheBuilderPlugin extends Plugin {
 
                 MousePackets.queueClickPacket();
                 TileObjectInteraction.interact(bankBooth.get(), "Bank");
+                return;
             }
+
+            TileObjects.search().withName("Bank chest").nearestToPlayer().ifPresent(tileObject -> {
+                MousePackets.queueClickPacket();
+                TileObjectInteraction.interact(tileObject, "Use");
+            });
         }
     }
 
@@ -238,15 +244,21 @@ public class BobTheBuilderPlugin extends Plugin {
     }
     private void TeleportToVarrock()
     {
-        TileObjects.search().nameContains("Amulet of Glory").nearestToPlayer().ifPresentOrElse(tileObject -> {
+        InventoryUtil.nameContainsNoCase("Crafting cape").first().ifPresentOrElse(item -> {
             MousePackets.queueClickPacket();
-            TileObjectInteraction.interact(tileObject, "Edgeville");
-        }, () -> {
-            Optional<Widget> teleportSpellIcon = Widgets.search().withId(WidgetInfoExtended.SPELL_VARROCK_TELEPORT.getPackedId()).first();
-            if (teleportSpellIcon.isPresent()) {
+            InventoryInteraction.useItem(item, "Teleport");
+        }
+        ,() -> {
+            TileObjects.search().nameContains("Amulet of Glory").nearestToPlayer().ifPresentOrElse(tileObject -> {
                 MousePackets.queueClickPacket();
-                WidgetPackets.queueWidgetAction(teleportSpellIcon.get(), "Cast");
-            }
+                TileObjectInteraction.interact(tileObject, "Edgeville");
+            }, () -> {
+                Optional<Widget> teleportSpellIcon = Widgets.search().withId(WidgetInfoExtended.SPELL_VARROCK_TELEPORT.getPackedId()).first();
+                if (teleportSpellIcon.isPresent()) {
+                    MousePackets.queueClickPacket();
+                    WidgetPackets.queueWidgetAction(teleportSpellIcon.get(), "Cast");
+                }
+            });
         });
     }
 
