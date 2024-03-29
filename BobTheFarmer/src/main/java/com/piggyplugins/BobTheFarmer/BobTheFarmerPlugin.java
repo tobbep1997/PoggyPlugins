@@ -5,15 +5,13 @@ import com.example.EthanApiPlugin.Collections.query.TileObjectQuery;
 import com.example.EthanApiPlugin.EthanApiPlugin;
 import com.example.InteractionApi.BankInteraction;
 import com.example.InteractionApi.BankInventoryInteraction;
+import com.example.InteractionApi.InventoryInteraction;
 import com.example.InteractionApi.TileObjectInteraction;
-import com.example.PacketUtils.WidgetInfoExtended;
 import com.example.Packets.*;
 import com.google.inject.Provides;
 import com.piggyplugins.PiggyUtils.API.BankUtil;
-import com.piggyplugins.PiggyUtils.API.InventoryUtil;
 import com.piggyplugins.PiggyUtils.BreakHandler.ReflectBreakHandler;
 import net.runelite.api.*;
-import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.config.ConfigManager;
@@ -27,10 +25,25 @@ import net.runelite.client.util.HotkeyListener;
 import com.google.inject.Inject;
 import org.apache.commons.lang3.RandomUtils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
+
+class FarmingState
+{
+    public String[] Tools = {};
+    public ProcessState HerbPatchState = ProcessState.NOT_STARTED;
+
+    public FarmingState(String[] tools)
+    {
+        this.Tools = tools;
+    }
+}
 
 @PluginDescriptor(
         name = "<html><font color=\"#FF9DF9\">[PP]</font> Bob The Farmer</html>",
@@ -52,21 +65,31 @@ public class BobTheFarmerPlugin extends Plugin {
     private ReflectBreakHandler breakHandler;
     State state;
     boolean started;
+    boolean herbRun;
+    boolean treeRun;
     private int timeout;
     public String debug = "";
     private boolean hasStocked = false;
 
+    private final String[] Tools =  {"Magic secateurs", "Spade", "Rake", "Seed dibber" };
+
+    public ProcessState FarmingStateDisplay = null;
+    private FarmingState ArdougneFarmingState = null;
+
+
 
     @Override
     protected void startUp() throws Exception {
-        keyManager.registerKeyListener(toggle);
+        keyManager.registerKeyListener(hotkeyListenerToggle);
+        keyManager.registerKeyListener(hotkeyListenerHerbRun);
         breakHandler.registerPlugin(this);
         this.overlayManager.add(overlay);
     }
 
     @Override
     protected void shutDown() throws Exception {
-        keyManager.unregisterKeyListener(toggle);
+        keyManager.unregisterKeyListener(hotkeyListenerToggle);
+        keyManager.unregisterKeyListener(hotkeyListenerHerbRun);
         breakHandler.unregisterPlugin(this);
         this.overlayManager.remove(overlay);
     }
@@ -78,14 +101,21 @@ public class BobTheFarmerPlugin extends Plugin {
 
     @Subscribe
     private void onGameTick(GameTick event) {
-        if (!EthanApiPlugin.loggedIn() || !started || breakHandler.isBreakActive(this)) {
+        if (!EthanApiPlugin.loggedIn() || (!started || !(herbRun || treeRun)) || breakHandler.isBreakActive(this)) {
             // We do an early return if the user isn't logged in
             hasStocked = false;
+            herbRun = false;
+            ResetFarmingStates();
             return;
         }
 
         state = getNextState();
         handleState();
+    }
+
+    private void ResetFarmingStates()
+    {
+        ArdougneFarmingState = new FarmingState(new String[] {""});
     }
 
     private void handleState() {
@@ -94,7 +124,6 @@ public class BobTheFarmerPlugin extends Plugin {
 
         switch (state) {
             case ANIMATING:
-                timeout = 5;
                 break;
             case HANDLE_BREAK:
                 breakHandler.startBreak(this);
@@ -105,6 +134,15 @@ public class BobTheFarmerPlugin extends Plugin {
                 break;
             case RESTOCK:
                 Restock();
+                break;
+            case TRAVLE_ARDOUGNE:
+                TravelArdougne();
+                SetDisplayState(ArdougneFarmingState);
+                setTimeout();
+                break;
+            case ARDOUGNE:
+                FarmHerbs(ArdougneFarmingState);
+                setTimeout();
                 break;
         }
     }
@@ -119,42 +157,180 @@ public class BobTheFarmerPlugin extends Plugin {
         if (timeout > 0) {
             return State.TIMEOUT;
         }
-        if (!hasStocked)
+        if (!herbRun && !treeRun)
+            return null;
+
+        if (!hasStocked && !config.debugDisableRestock())
             return State.RESTOCK;
 
-        if (config.enableArdougne())
+        if (config.enableArdougne() && ArdougneFarmingState.HerbPatchState.Index < 2)
+        {
             return State.TRAVLE_ARDOUGNE;
+        }
+        if (config.enableArdougne() && ArdougneFarmingState.HerbPatchState.Index >= 2 &&
+                ArdougneFarmingState.HerbPatchState != ProcessState.DONE)
+        {
+            return State.ARDOUGNE;
+        }
 
-
+        Stop("Done");
         return null;
     }
 
 
+    private ProcessState FarmHerbsState(FarmingState currentState)
+    {
+        //Check if there is any weeds in the inventory and drop them if there is
+        if (Inventory.search().withName("Weeds").first().isPresent())
+            return ProcessState.EMPTY_INVENTORY;
+
+        //Check if the patch is not fully grown then mark the patch as done
+        if (TileObjects.search().withName("Herbs").first().isPresent() && currentState.HerbPatchState != ProcessState.PLANTING)
+            if (!Arrays.asList(TileObjectQuery.getObjectComposition(TileObjects.search().withName("Herbs").first().get()).getActions()).contains("Pick"))
+                return ProcessState.DONE;
+
+        //Harvest herbs if there is any
+        if (TileObjects.search().withName("Herbs").withAction("Pick").first().isPresent())
+            return ProcessState.HARVEST;
+
+        //Plant new herbs
+        if (TileObjects.search().nameContains("Herb patch").withAction("Rake").first().isPresent()){
+            return ProcessState.CLEARING;
+        }
+
+        //Check if herb patch is ready for planting
+        if (TileObjects.search().nameContains("Herb patch").withAction("Inspect").first().isPresent()) {
+            if (Inventory.search().withName(config.seed()).first().isPresent())
+                //Use seed on herb patch
+                return ProcessState.PLANTING;
+        }
+
+        //Use compost on the herbs
+        if (TileObjects.search().nameContains("Herbs").withAction("Inspect").first().isPresent()) {
+            if (Inventory.search().withName(config.compost()).first().isPresent())
+                return ProcessState.COMPOST;
+        }
+        return ProcessState.PROCESS_HERB_PATCH;
+    }
+
+    private void FarmHerbs(FarmingState state)
+    {
+        if (state.HerbPatchState.Index < 2 || state.HerbPatchState == ProcessState.DONE)
+            return;
+
+        state.HerbPatchState = FarmHerbsState(state);
+        SetDisplayState(state);
+
+        switch (state.HerbPatchState)
+        {
+            case HARVEST: //Harvest herbs if there is any
+                TileObjects.search().withName("Herbs").withAction("Pick").first().ifPresent(herb -> {
+                    MousePackets.queueClickPacket();
+                    TileObjectInteraction.interact(herb, "Pick");
+                });
+                break;
+            case CLEARING:
+                //Plant new herbs
+                TileObjects.search().nameContains("Herb patch").withAction("Rake").first().ifPresent(tileObject -> {
+                    MousePackets.queueClickPacket();
+                    TileObjectInteraction.interact(tileObject, "Rake");
+                });
+                break;
+            case PLANTING:
+                TileObjects.search().nameContains("Herb patch").withAction("Inspect").first().ifPresent(tileObject -> {
+                    Inventory.search().withName(config.seed()).first().ifPresent(item -> {
+                        //Use seed on herb patch
+                        MousePackets.queueClickPacket();
+                        MousePackets.queueClickPacket();
+                        ObjectPackets.queueWidgetOnTileObject(item, tileObject);
+                    });
+                });
+                break;
+            case COMPOST:
+                //Use compost on the herbs
+                TileObjects.search().nameContains("Herbs").withAction("Inspect").first().ifPresent(tileObject -> {
+                    state.HerbPatchState = ProcessState.COMPOST;
+                    Inventory.search().withName(config.compost()).first().ifPresent(item -> {
+                        //Use compost on herb patch
+                        MousePackets.queueClickPacket();
+                        MousePackets.queueClickPacket();
+                        ObjectPackets.queueWidgetOnTileObject(item, tileObject);
+                        state.HerbPatchState = ProcessState.DONE;
+                    });
+                });
+                break;
+            case EMPTY_INVENTORY: //Check if there is any weeds in the inventory and drop them if there is
+                Inventory.search().withName("Weeds").first().ifPresent(weeds -> {
+                    MousePackets.queueClickPacket();
+                    InventoryInteraction.useItem(weeds, "Drop");
+                });
+                break;
+        }
+    }
 
     private void Restock()
     {
         if (Bank.isOpen()) {
-            List<Widget> bankInv = BankInventory.search().result();
+            ArrayList<String> keepItems = new ArrayList<String>(Arrays.asList(Tools));
+
+            if (config.enableArdougne())
+                keepItems.addAll(Arrays.asList(ArdougneFarmingState.Tools));
+
+            //Deposit itemes that are not needed
+            List<Widget> bankInv = BankInventory.search().filter(widget -> !keepItems.contains(widget.getName())).result();
             for (Widget item : bankInv) {
                 MousePackets.queueClickPacket();
                 BankInventoryInteraction.useItem(item, "Deposit-All");
             }
 
-            BankUtil.nameContainsNoCase(config.items1()).first().ifPresentOrElse(widget ->
-                        BankInteraction.withdrawX(widget, config.items1Amount()),
-                    () -> {
-                        started = false;
-                        this.state = State.TIMEOUT;
-                        breakHandler.stopPlugin(this);
-            });
+            //Take out basic tools
+            for (String tool : Tools) {
+                if (!TakeOutItemFromBank(tool, 1)) {
+                    Stop("Missing " + tool + " in bank");
+                    return;
+                }
+            }
 
-            BankUtil.nameContainsNoCase(config.items2()).first().ifPresentOrElse(widget ->
-                            BankInteraction.withdrawX(widget, config.items2Amount()),
-                    () -> {
-                        started = false;
-                        this.state = State.TIMEOUT;
-                        breakHandler.stopPlugin(this);
-                    });
+            if (!TakeOutItemFromBank(config.seed(), -1)) {
+                Stop("Missing " + config.seed() + " in bank");
+                return;
+            }
+
+            int compostAmount = 0;
+            compostAmount += config.enableArdougne() ? 1 : 0;
+
+            if (!TakeOutItemFromBank(config.compost(), compostAmount)) {
+                Stop("Missing " + config.seed() + " in bank");
+                return;
+            }
+
+            //Take out tools that are needed for the Ardougne herb patch
+            if (config.enableArdougne())
+            {
+                for (String tool : ArdougneFarmingState.Tools)
+                {
+                    if (!TakeOutItemFromBank(tool, 1)) {
+                        Stop("Missing " + tool + " in bank");
+                        return;
+                    }
+                }
+
+                boolean gotCloak = false;
+                for (int i = 4; i >= 2; i--) {
+                    if (TakeOutItemFromBank("Ardougne cloak " + Integer.toString(i), 1)) {
+                        gotCloak = true;
+                        break;
+                    }
+                }
+                if (!gotCloak)
+                {
+                    Stop("Missing Ardougne cloak 2 or higher in bank");
+                    return;
+                }
+            }
+
+            //Make sure we have all items and mark it as clear
+            hasStocked = true;
             setTimeout();
         }
         else {
@@ -165,24 +341,112 @@ public class BobTheFarmerPlugin extends Plugin {
             }).nearestToPlayer();
 
             if (bankBooth.isPresent()) {
-
                 MousePackets.queueClickPacket();
                 TileObjectInteraction.interact(bankBooth.get(), "Bank");
             }
+
+            TileObjects.search().withName("Bank chest").nearestToPlayer().ifPresent(tileObject -> {
+                MousePackets.queueClickPacket();
+                TileObjectInteraction.interact(tileObject, "Use");
+            });
         }
     }
 
+    private boolean TakeOutItemFromBank(String item, int amount)
+    {
+        AtomicBoolean succeeded = new AtomicBoolean(false);
+        BankUtil.nameContainsNoCase(item).first().ifPresentOrElse(widget ->
+            {
+                int localAmount = amount - Inventory.search().withName(item).result().size();
+
+                if (amount < 0)
+                    localAmount = BankUtil.getItemAmount(widget.getItemId());
+
+                if (localAmount > 0)
+                {
+                    MousePackets.queueClickPacket();
+                    BankInteraction.withdrawX(widget, localAmount);
+                }
+
+                succeeded.set(true);
+            },
+            () -> {
+                succeeded.set(false);
+            });
+
+        if (Inventory.search().withName(item).first().isPresent())
+            succeeded.set(true);
+
+        return succeeded.get();
+    }
+
+    private void TravelArdougne()
+    {
+        ArdougneFarmingState.HerbPatchState = ProcessState.TRAVEL;
+
+        Inventory.search().withName("Ardougne cloak 4").first().ifPresentOrElse(item -> {
+            MousePackets.queueClickPacket();
+            InventoryInteraction.useItem(item, "Farm Teleport");
+            ArdougneFarmingState.HerbPatchState = ProcessState.PROCESS_HERB_PATCH;
+        }, () -> {
+            Inventory.search().withName("Ardougne cloak 3").first().ifPresentOrElse(item -> {
+                MousePackets.queueClickPacket();
+                InventoryInteraction.useItem(item, "Farm Teleport");
+                ArdougneFarmingState.HerbPatchState = ProcessState.PROCESS_HERB_PATCH;
+            }, () -> {
+                Inventory.search().withName("Ardougne cloak 2").first().ifPresentOrElse(item -> {
+                    MousePackets.queueClickPacket();
+                    InventoryInteraction.useItem(item, "Farm Teleport");
+                    ArdougneFarmingState.HerbPatchState = ProcessState.PROCESS_HERB_PATCH;
+                }, () -> {
+                    Stop("Missing Ardougne cloak 2");
+                });
+            });
+        });
+
+        //TODO: REMOVE ME
+        ArdougneFarmingState.HerbPatchState = ProcessState.PROCESS_HERB_PATCH;
+    }
+
+    private void SetDisplayState(FarmingState state)
+    {
+        FarmingStateDisplay = state.HerbPatchState;
+    }
 
     private void setTimeout() {
         timeout = RandomUtils.nextInt(config.tickdelayMin(), config.tickDelayMax());
     }
 
-    private final HotkeyListener toggle = new HotkeyListener(() -> config.toggle()) {
+    private final HotkeyListener hotkeyListenerToggle = new HotkeyListener(() -> config.toggle()) {
         @Override
         public void hotkeyPressed() {
             toggle();
         }
     };
+
+    private final HotkeyListener hotkeyListenerHerbRun = new HotkeyListener(() -> config.doHerbRun()) {
+        @Override
+        public void hotkeyPressed() {
+            herbRun();
+        }
+    };
+
+    public void Stop(String reason)
+    {
+        started = false;
+        debug = reason;
+        this.state = State.TIMEOUT;
+        breakHandler.stopPlugin(this);
+        herbRun = false;
+    }
+
+    public void herbRun()
+    {
+        if (client.getGameState() != GameState.LOGGED_IN) {
+            return;
+        }
+        herbRun = true;
+    }
 
     public void toggle() {
         if (client.getGameState() != GameState.LOGGED_IN) {

@@ -145,6 +145,11 @@ public class BobTheTemplatePlugin extends Plugin {
                 MousePackets.queueClickPacket();
                 TileObjectInteraction.interact(bankBooth.get(), "Bank");
             }
+
+            TileObjects.search().withName("Bank chest").nearestToPlayer().ifPresent(tileObject -> {
+                MousePackets.queueClickPacket();
+                TileObjectInteraction.interact(tileObject, "Use");
+            });
         }
     }
 

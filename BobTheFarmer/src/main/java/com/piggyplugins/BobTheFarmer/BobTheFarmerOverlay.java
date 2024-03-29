@@ -25,17 +25,23 @@ public class BobTheFarmerOverlay extends OverlayPanel {
     public Dimension render(Graphics2D graphics) {
         panelComponent.setPreferredSize(new Dimension(200, 320));
         panelComponent.getChildren().add(TitleComponent.builder()
-                .text("Bob The Blower")
+                .text("Bob The Farmer")
                 .color(new Color(255, 157, 249))
                 .build());
         panelComponent.getChildren().add(TitleComponent.builder()
-                .text(plugin.started ? "Running" : "Paused")
+                .text(plugin.started ? "Running" + (plugin.herbRun ? ", Herb run" : "") : "Paused")
                 .color(plugin.started ? Color.GREEN : Color.RED)
                 .build());
         panelComponent.getChildren().add(LineComponent.builder()
                 .left("State: ")
                 .leftColor(new Color(255, 157, 249))
                 .right(plugin.state==null || !plugin.started ? "STOPPED" : plugin.state.name())
+                .rightColor(Color.WHITE)
+                .build());
+        panelComponent.getChildren().add(LineComponent.builder()
+                .left("Farming State: ")
+                .leftColor(new Color(255, 157, 249))
+                .right(plugin.state==null || plugin.FarmingStateDisplay==null || !plugin.started ? "" : plugin.FarmingStateDisplay.name())
                 .rightColor(Color.WHITE)
                 .build());
         panelComponent.getChildren().add(LineComponent.builder()
