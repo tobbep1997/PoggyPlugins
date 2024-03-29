@@ -6,6 +6,8 @@ public enum State {
     HANDLE_BREAK,
     RESTOCK,
     TRAVLE_ARDOUGNE,
-    ARDOUGNE
+    ARDOUGNE,
+    TRAVLE_FALADOR,
+    FALADOR
 }
 

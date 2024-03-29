@@ -3,10 +3,7 @@ package com.piggyplugins.BobTheFarmer;
 import com.example.EthanApiPlugin.Collections.*;
 import com.example.EthanApiPlugin.Collections.query.TileObjectQuery;
 import com.example.EthanApiPlugin.EthanApiPlugin;
-import com.example.InteractionApi.BankInteraction;
-import com.example.InteractionApi.BankInventoryInteraction;
-import com.example.InteractionApi.InventoryInteraction;
-import com.example.InteractionApi.TileObjectInteraction;
+import com.example.InteractionApi.*;
 import com.example.PacketUtils.WidgetInfoExtended;
 import com.example.Packets.*;
 import com.google.inject.Provides;
@@ -14,6 +11,7 @@ import com.piggyplugins.PiggyUtils.API.BankUtil;
 import com.piggyplugins.PiggyUtils.BreakHandler.ReflectBreakHandler;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.config.ConfigManager;
@@ -35,12 +33,13 @@ class FarmingState
 {
     public String[] Tools = {};
     public ProcessState HerbPatchState = ProcessState.NOT_STARTED;
-
     public Dictionary<String, WorldPoint[]> Paths = new Hashtable<>();
+    public int PathIndex = 0;
 
     public FarmingState(String[] tools)
     {
         this.Tools = tools;
+        this.PathIndex = 0;
     }
     public void SetPath(WorldPoint[] path, String key)
     {
@@ -67,7 +66,7 @@ public class BobTheFarmerPlugin extends Plugin {
     @Inject
     private ReflectBreakHandler breakHandler;
     State state;
-    WorldPoint debugPoint = null;
+    WorldPoint debugPoint = new WorldPoint(0,0,0);
     boolean started;
     boolean herbRun;
     boolean treeRun;
@@ -114,6 +113,21 @@ public class BobTheFarmerPlugin extends Plugin {
     }
 
     @Subscribe
+    private void onChatMessage(ChatMessage message)
+    {
+        if (message.getType() == ChatMessageType.GAMEMESSAGE)
+        {
+            if (message.getMessage().contains("Try again tomorrow when the cape"))
+            {
+                ArdougneFarmingState.PathIndex = 2;
+            }
+            if (message.getMessage().contains("Try again tomorrow whilst the ring"))
+            {
+                FaladorFarmingState.PathIndex = 10;
+            }
+        }
+    }
+    @Subscribe
     private void onGameTick(GameTick event) {
         if (!EthanApiPlugin.loggedIn() || (!started || !(herbRun || treeRun)) || breakHandler.isBreakActive(this)) {
             // We do an early return if the user isn't logged in
@@ -133,6 +147,9 @@ public class BobTheFarmerPlugin extends Plugin {
         ArdougneFarmingState.SetPath(Paths.ArdougneTeleportPath, "Teleport");
 
         FaladorFarmingState = new FarmingState(new String[] {});
+        FaladorFarmingState.SetPath(Paths.FaladorTeleportPath1, "Teleport1");
+        FaladorFarmingState.SetPath(Paths.FaladorTeleportPath2, "Teleport2");
+
         PortPhasmatysFarmingState = new FarmingState(new String[] {});
         CatherbyFarmingState = new FarmingState(new String[] {});
         HosidiusFarmingState = new FarmingState(new String[] {});
@@ -163,16 +180,23 @@ public class BobTheFarmerPlugin extends Plugin {
             case TRAVLE_ARDOUGNE:
                 TravelArdougne();
                 SetDisplayState(ArdougneFarmingState);
-                setTimeout();
                 break;
             case ARDOUGNE:
                 FarmHerbs(ArdougneFarmingState);
-                setTimeout();
+                break;
+            case TRAVLE_FALADOR:
+                TravelToFalador();
+                SetDisplayState(FaladorFarmingState);
+                break;
+            case FALADOR:
+                FarmHerbs(FaladorFarmingState);
                 break;
         }
     }
 
     private State getNextState() {
+
+
         if (EthanApiPlugin.isMoving() || client.getLocalPlayer().getAnimation() != -1) {
             return State.ANIMATING;
         }
@@ -198,6 +222,16 @@ public class BobTheFarmerPlugin extends Plugin {
             return State.ARDOUGNE;
         }
 
+        if (config.enableFalador() && FaladorFarmingState.HerbPatchState.Index < 2)
+        {
+            return State.TRAVLE_FALADOR;
+        }
+        if (config.enableFalador() && FaladorFarmingState.HerbPatchState.Index >= 2 &&
+                FaladorFarmingState.HerbPatchState != ProcessState.DONE)
+        {
+            return State.FALADOR;
+        }
+
         Stop("Done");
         return null;
     }
@@ -212,14 +246,14 @@ public class BobTheFarmerPlugin extends Plugin {
         //Check if the patch is not fully grown then mark the patch as done
         if (TileObjects.search().withName("Herbs").first().isPresent() && currentState.HerbPatchState != ProcessState.PLANTING)
             if (!Arrays.asList(TileObjectQuery.getObjectComposition(TileObjects.search().withName("Herbs").first().get()).getActions()).contains("Pick"))
-                return ProcessState.DONE;
+                return ProcessState.NOTE;
 
         //Harvest herbs if there is any
         if (TileObjects.search().withName("Herbs").withAction("Pick").first().isPresent())
             return ProcessState.HARVEST;
 
-        //Harvest herbs if there is any
-        if (TileObjects.search().withName("Herbs").withAction("Clear").first().isPresent())
+        //Clear dead herbs
+        if (TileObjects.search().withName("Dead herbs").withAction("Clear").first().isPresent())
             return ProcessState.CLEAR;
 
         //Plant new herbs
@@ -239,6 +273,7 @@ public class BobTheFarmerPlugin extends Plugin {
             if (Inventory.search().withName(config.compost()).first().isPresent())
                 return ProcessState.COMPOST;
         }
+
         return ProcessState.PROCESS_HERB_PATCH;
     }
 
@@ -260,7 +295,7 @@ public class BobTheFarmerPlugin extends Plugin {
                 break;
             case CLEAR:
                 //Plant new herbs
-                TileObjects.search().nameContains("Herbs").withAction("Clear").first().ifPresent(tileObject -> {
+                TileObjects.search().nameContains("Dead herbs").withAction("Clear").first().ifPresent(tileObject -> {
                     MousePackets.queueClickPacket();
                     TileObjectInteraction.interact(tileObject, "Clear");
                 });
@@ -291,7 +326,7 @@ public class BobTheFarmerPlugin extends Plugin {
                         MousePackets.queueClickPacket();
                         MousePackets.queueClickPacket();
                         ObjectPackets.queueWidgetOnTileObject(item, tileObject);
-                        state.HerbPatchState = ProcessState.DONE;
+                        state.HerbPatchState = ProcessState.NOTE;
                     });
                 });
                 break;
@@ -301,7 +336,20 @@ public class BobTheFarmerPlugin extends Plugin {
                     InventoryInteraction.useItem(weeds, "Drop");
                 });
                 break;
+            case NOTE:
+                Inventory.search().nameContains("Grimy").withAction("Clean").onlyUnnoted().first().ifPresent(herbs -> {
+                    debug = "found herb";
+
+                    NPCs.search().nameContains("Tool").nearestToPlayer().ifPresent(leprechaun -> {
+                        debug = "found leprechaun";
+                        MousePackets.queueClickPacket();
+                        NPCPackets.queueWidgetOnNPC(leprechaun, herbs);
+                    });
+                });
+                state.HerbPatchState = ProcessState.DONE;
+                break;
         }
+        setTimeout();
     }
 
     private void Restock()
@@ -398,17 +446,28 @@ public class BobTheFarmerPlugin extends Plugin {
                     }
                 }
 
-                boolean gotCloak = false;
                 for (int i = 4; i >= 2; i--) {
                     if (TakeOutItemFromBank("Ardougne cloak " + i, 1)) {
-                        gotCloak = true;
                         break;
                     }
                 }
-                if (!gotCloak)
+            }
+
+            //Take out tools that are needed for the Falador herb patch
+            if (config.enableFalador())
+            {
+                for (String tool : FaladorFarmingState.Tools)
                 {
-                    Stop("Missing Ardougne cloak 2 or higher in bank");
-                    return;
+                    if (!TakeOutItemFromBank(tool, 1)) {
+                        Stop("Missing " + tool + " in bank");
+                        return;
+                    }
+                }
+
+                for (int i = 4; i >= 2; i--) {
+                    if (TakeOutItemFromBank("Explorer's ring " + i, 1)) {
+                        break;
+                    }
                 }
             }
 
@@ -467,20 +526,27 @@ public class BobTheFarmerPlugin extends Plugin {
     {
         ArdougneFarmingState.HerbPatchState = ProcessState.TRAVEL;
 
-        boolean teleported = false;
-        for (int i = 4; i >= 2; i--) {
-            if (Inventory.search().withName("Ardougne cloak " + i).first().isPresent())
-            {
-                teleported = true;
-                MousePackets.queueClickPacket();
-                InventoryInteraction.useItem(
-                        Inventory.search().withName("Ardougne cloak " + i).first().get(),
-                        "Farm Teleport");
-                ArdougneFarmingState.HerbPatchState = ProcessState.PROCESS_HERB_PATCH;
+        if (ArdougneFarmingState.PathIndex == 0)
+        {
+            for (int i = 4; i >= 2; i--) {
+                if (Inventory.search().withName("Ardougne cloak " + i).first().isPresent())
+                {
+                    MousePackets.queueClickPacket();
+                    InventoryInteraction.useItem(
+                            Inventory.search().withName("Ardougne cloak " + i).first().get(),
+                            "Farm Teleport");
+                }
             }
-
+            ArdougneFarmingState.PathIndex = 1;
+            timeout = 4;
+            return;
         }
-        if (!teleported)
+        if (ArdougneFarmingState.PathIndex == 1)
+        {
+            ArdougneFarmingState.HerbPatchState = ProcessState.PROCESS_HERB_PATCH;
+            return;
+        }
+        if (ArdougneFarmingState.PathIndex == 2)
         {
             if (!CastTeleportSpell(WidgetInfoExtended.SPELL_ARDOUGNE_TELEPORT))
             {
@@ -488,11 +554,137 @@ public class BobTheFarmerPlugin extends Plugin {
             }
             else
             {
+                ResetPath();
+                ArdougneFarmingState.PathIndex = 3;
+                setTimeout();
+            }
+            return;
+        }
+        if (ArdougneFarmingState.PathIndex == 3)
+        {
+            if (TravelPath(ArdougneFarmingState.Paths.get("Teleport")))
+            {
                 ArdougneFarmingState.HerbPatchState = ProcessState.PROCESS_HERB_PATCH;
+                setTimeout();
             }
         }
-        //TODO: REMOVE ME
-        ArdougneFarmingState.HerbPatchState = ProcessState.PROCESS_HERB_PATCH;
+    }
+
+    private void TravelToFalador()
+    {
+        if (FaladorFarmingState.PathIndex == 0)
+        {
+            for (int i = 4; i >= 2; i--) {
+                if (Inventory.search().withName("Explorer's ring " + i).first().isPresent())
+                {
+                    MousePackets.queueClickPacket();
+                    InventoryInteraction.useItem(
+                            Inventory.search().withName("Explorer's ring " + i).first().get(),
+                            "Teleport");
+                }
+            }
+            FaladorFarmingState.PathIndex = 1;
+            timeout = 8;
+            return;
+        }
+        if (FaladorFarmingState.PathIndex == 1)
+        {
+            FaladorFarmingState.HerbPatchState = ProcessState.PROCESS_HERB_PATCH;
+            return;
+        }
+        if (FaladorFarmingState.PathIndex == 10)
+        {
+            if (!CastTeleportSpell(WidgetInfoExtended.SPELL_FALADOR_TELEPORT))
+            {
+                Stop("Couldn't teleport to Falador");
+            }
+            else
+            {
+                ResetPath();
+                FaladorFarmingState.PathIndex = 11;
+                setTimeout();
+            }
+            return;
+        }
+        if (FaladorFarmingState.PathIndex == 11)
+        {
+            if (TravelPath(FaladorFarmingState.Paths.get("Teleport1")))
+            {
+                FaladorFarmingState.PathIndex = 12;
+                setTimeout();
+            }
+            return;
+        }
+        if (FaladorFarmingState.PathIndex == 12)
+        {
+            TileObjects.search()
+                    .nameContains("Gate")
+                    .withAction("Open")
+                    .withinDistance(6)
+                    .nearestToPlayer()
+                    .ifPresent(gate -> {
+
+                        MousePackets.queueClickPacket();
+                        TileObjectInteraction.interact(gate, "Open");
+            });
+            ResetPath();
+            FaladorFarmingState.PathIndex = 13;
+            return;
+        }
+        if (FaladorFarmingState.PathIndex == 13)
+        {
+            if (TravelPath(FaladorFarmingState.Paths.get("Teleport2")))
+            {
+                FaladorFarmingState.PathIndex = 14;
+                setTimeout();
+            }
+            return;
+        }
+        if (FaladorFarmingState.PathIndex == 14)
+        {
+            TileObjects.search()
+                    .nameContains("Stile")
+                    .withAction("Climb-over")
+                    .withinDistance(6)
+                    .nearestToPlayer()
+                    .ifPresent(gate -> {
+
+                        MousePackets.queueClickPacket();
+                        TileObjectInteraction.interact(gate, "Climb-over");
+                    });
+            timeout = 4;
+            FaladorFarmingState.HerbPatchState = ProcessState.PROCESS_HERB_PATCH;
+        }
+
+    }
+
+    private int pathIndex = 0;
+    private void ResetPath()
+    {
+        pathIndex = 0;
+    }
+    private boolean TravelPath(WorldPoint[] path)
+    {
+        if (EthanApiPlugin.isMoving())
+            return false;
+
+        if (playerAtTarget(path[pathIndex]))
+            pathIndex++;
+
+        if (pathIndex < path.length)
+        {
+            //Move the player to the trap location
+            MousePackets.queueClickPacket();
+            MovementPackets.queueMovement(path[pathIndex]);
+        }
+        else
+            return true;
+        return false;
+    }
+
+    private boolean playerAtTarget(WorldPoint targetTile)
+    {
+        return client.getLocalPlayer().getWorldLocation().getX() == targetTile.getX() && client.getLocalPlayer().getWorldLocation().getY() == targetTile.getY();
     }
 
     private boolean CastTeleportSpell(WidgetInfoExtended spell)
@@ -501,6 +693,7 @@ public class BobTheFarmerPlugin extends Plugin {
         if (teleportSpellIcon.isPresent()) {
             MousePackets.queueClickPacket();
             WidgetPackets.queueWidgetAction(teleportSpellIcon.get(), "Cast");
+            return true;
         }
 
         return false;
