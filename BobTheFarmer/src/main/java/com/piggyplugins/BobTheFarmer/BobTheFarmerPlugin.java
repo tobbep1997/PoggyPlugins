@@ -220,7 +220,7 @@ public class BobTheFarmerPlugin extends Plugin {
 
         //Harvest herbs if there is any
         if (TileObjects.search().withName("Herbs").withAction("Clear").first().isPresent())
-            return ProcessState.HARVEST;
+            return ProcessState.CLEAR;
 
         //Plant new herbs
         if (TileObjects.search().nameContains("Herb patch").withAction("Rake").first().isPresent()){
@@ -256,6 +256,13 @@ public class BobTheFarmerPlugin extends Plugin {
                 TileObjects.search().withName("Herbs").withAction("Pick").first().ifPresent(herb -> {
                     MousePackets.queueClickPacket();
                     TileObjectInteraction.interact(herb, "Pick");
+                });
+                break;
+            case CLEAR:
+                //Plant new herbs
+                TileObjects.search().nameContains("Herbs").withAction("Clear").first().ifPresent(tileObject -> {
+                    MousePackets.queueClickPacket();
+                    TileObjectInteraction.interact(tileObject, "Clear");
                 });
                 break;
             case RAKE:
