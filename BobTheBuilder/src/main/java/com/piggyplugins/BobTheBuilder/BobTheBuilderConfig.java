@@ -1,4 +1,4 @@
-package com.piggyplugins.BobTheHunter;
+package com.piggyplugins.BobTheBuilder;
 
 import net.runelite.client.config.*;
 

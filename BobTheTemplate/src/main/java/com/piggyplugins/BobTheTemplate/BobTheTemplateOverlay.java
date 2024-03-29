@@ -1,4 +1,4 @@
-package com.piggyplugins.BobTheHunter;
+package com.piggyplugins.BobTheTemplate;
 
 import com.google.inject.Inject;
 import net.runelite.client.ui.overlay.OverlayPanel;
@@ -8,12 +8,12 @@ import net.runelite.client.ui.overlay.components.TitleComponent;
 
 import java.awt.*;
 
-public class BobTheBuilderOverlay extends OverlayPanel {
+public class BobTheTemplateOverlay extends OverlayPanel {
 
-    private final BobTheBuilderPlugin plugin;
+    private final BobTheTemplatePlugin plugin;
 
     @Inject
-    private BobTheBuilderOverlay(BobTheBuilderPlugin plugin) {
+    private BobTheTemplateOverlay(BobTheTemplatePlugin plugin) {
         super(plugin);
         this.plugin = plugin;
         setPosition(OverlayPosition.BOTTOM_LEFT);
@@ -25,7 +25,7 @@ public class BobTheBuilderOverlay extends OverlayPanel {
     public Dimension render(Graphics2D graphics) {
         panelComponent.setPreferredSize(new Dimension(200, 320));
         panelComponent.getChildren().add(TitleComponent.builder()
-                .text("Bob The Builder")
+                .text("Bob The Blower")
                 .color(new Color(255, 157, 249))
                 .build());
         panelComponent.getChildren().add(TitleComponent.builder()
@@ -44,6 +44,7 @@ public class BobTheBuilderOverlay extends OverlayPanel {
                 .right(plugin.debug)
                 .rightColor(Color.WHITE)
                 .build());
+
 
 
 

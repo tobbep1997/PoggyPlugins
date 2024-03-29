@@ -1,19 +1,14 @@
 package com.piggyplugins.BobTheHunter;
 
-import com.example.EthanApiPlugin.Collections.ETileItem;
-import com.example.EthanApiPlugin.Collections.Inventory;
-import com.example.EthanApiPlugin.Collections.TileItems;
-import com.example.EthanApiPlugin.Collections.TileObjects;
+import com.example.EthanApiPlugin.Collections.*;
 import com.example.EthanApiPlugin.Collections.query.ItemQuery;
 import com.example.EthanApiPlugin.Collections.query.PlayerQuery;
 import com.example.EthanApiPlugin.Collections.query.TileObjectQuery;
 import com.example.EthanApiPlugin.EthanApiPlugin;
 import com.example.InteractionApi.InventoryInteraction;
+import com.example.InteractionApi.PlayerInteractionHelper;
 import com.example.InteractionApi.TileObjectInteraction;
-import com.example.Packets.MousePackets;
-import com.example.Packets.MovementPackets;
-import com.example.Packets.PlayerPackets;
-import com.example.Packets.TileItemPackets;
+import com.example.Packets.*;
 import com.google.inject.Provides;
 import com.piggyplugins.PiggyUtils.API.InventoryUtil;
 import com.piggyplugins.PiggyUtils.API.PlayerUtil;
@@ -63,7 +58,7 @@ public class BobTheHunterPlugin extends Plugin {
     State state;
     boolean started;
     private int timeout;
-    WorldPoint startTile;
+    WorldPoint startTile = null;
     WorldPoint targetTile;
     WorldPoint playerTile;
     int activeTraps = 0;
@@ -96,6 +91,7 @@ public class BobTheHunterPlugin extends Plugin {
         if (!EthanApiPlugin.loggedIn() || !started || breakHandler.isBreakActive(this)) {
             startTile = null;
             resetStartTile = true;
+            takeBreak = false;
             // We do an early return if the user isn't logged in
             return;
         }
@@ -155,8 +151,8 @@ public class BobTheHunterPlugin extends Plugin {
     }
 
     private State getNextState() {
-        if (EthanApiPlugin.isMoving()) {
-            return State.ANIMATING;
+        if (EthanApiPlugin.isMoving() || client.getLocalPlayer().getAnimation() != -1) {
+            //return State.ANIMATING;
         }
         if (breakHandler.shouldBreak(this)) {
             takeBreak = true;
@@ -310,9 +306,19 @@ public class BobTheHunterPlugin extends Plugin {
                 break;
             targetTile = null;
 
+            if (config.teakTik() && Inventory.search().withName("Teak logs").first().isPresent() && Inventory.search().withName("Knife").first().isPresent())
+            {
+                Widget teak = Inventory.search().withName("Teak logs").first().get();
+                Widget knife = Inventory.search().withName("Knife").first().get();
+
+                MousePackets.queueClickPacket();
+                MousePackets.queueClickPacket();
+                WidgetPackets.queueWidgetOnWidget(knife, teak);
+            }
+
             MousePackets.queueClickPacket();
             InventoryInteraction.useItem(trap.get(), "Lay");
-            timeout = RandomUtils.nextInt(3, 5);
+            timeout = 3;
         }
     }
 
@@ -363,6 +369,8 @@ public class BobTheHunterPlugin extends Plugin {
     private boolean shouldKeep(String name) {
         List<String> itemsToKeep = new ArrayList<>(List.of(config.itemsToKeep().split(",")));
         itemsToKeep.add(TrapToString(false));
+        itemsToKeep.add("Teak logs");
+        itemsToKeep.add("Knife");
         return itemsToKeep.stream()
                 .anyMatch(i -> Text.removeTags(name.toLowerCase()).contains(i.toLowerCase()));
     }

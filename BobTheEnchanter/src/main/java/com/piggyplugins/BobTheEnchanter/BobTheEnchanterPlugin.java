@@ -12,6 +12,7 @@ import com.example.InteractionApi.TileObjectInteraction;
 import com.example.PacketUtils.WidgetInfoExtended;
 import com.example.Packets.*;
 import com.google.inject.Provides;
+import com.piggyplugins.BobTheEnchanter.State;
 import com.piggyplugins.PiggyUtils.API.BankUtil;
 import com.piggyplugins.PiggyUtils.API.InventoryUtil;
 import com.piggyplugins.PiggyUtils.API.PlayerUtil;
@@ -41,8 +42,8 @@ import java.util.Optional;
 
 
 @PluginDescriptor(
-        name = "<html><font color=\"#FF9DF9\">[PP]</font> Bob The Builder</html>",
-        description = "Bob goes building",
+        name = "<html><font color=\"#FF9DF9\">[PP]</font> Bob The Enchanter</html>",
+        description = "Bob goes Enchanting",
         tags = {"ethan", "piggy", "skilling"}
 )
 public class BobTheEnchanterPlugin extends Plugin {
@@ -133,15 +134,13 @@ public class BobTheEnchanterPlugin extends Plugin {
         }
         if (hasItems())
         {
-
+            return State.ENCHANT;
         }
         else
         {
 
             return State.RESTOCK;
         }
-
-        return State.TIMEOUT;
     }
 
     private void Restock()

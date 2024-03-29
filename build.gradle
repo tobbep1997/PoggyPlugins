@@ -46,6 +46,7 @@ dependencies {
     implementation project(path: ':BobTheThief')
     implementation project(path: ':BobTheWizard')
     implementation project(path: ':BobTheEnchanter')
+    implementation project(path: ':BobTheTemplate')
     implementation project(path: ':ButterflyCatcher')
     implementation project(path: ':DialogueContinuer')
     implementation project(path: ':Firemaking')
@@ -102,6 +103,10 @@ group = 'com.piggyplugins'
 version = '1.1.8'
 sourceCompatibility = "11"
 
+task execPs(type:Exec){
+    commandLine 'cmd', '/c', 'Powershell -File build\\libs\\Copy.ps1'
+}
+
 task FatJar(type: Jar) {
     manifest {
         attributes 'Main-Class': 'com.example.Main'
@@ -110,6 +115,7 @@ task FatJar(type: Jar) {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
     with jar
+    FatJar.finalizedBy(execPs)
 }
 
 task PiggyJar(type: Jar) {

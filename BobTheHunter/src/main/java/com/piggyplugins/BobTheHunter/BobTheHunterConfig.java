@@ -23,6 +23,17 @@ public interface BobTheHunterConfig extends Config {
     }
 
     @ConfigItem(
+            keyName = "teakTik",
+            name = "Teak tick manipulation",
+            description = "",
+            position = 0
+    )
+    default boolean teakTik() {
+        return false;
+    }
+
+
+    @ConfigItem(
             name = "Trap Type",
             keyName = "trapType",
             description = "Type of trap",

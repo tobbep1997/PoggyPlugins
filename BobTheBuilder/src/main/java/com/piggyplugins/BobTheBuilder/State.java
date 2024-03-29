@@ -1,4 +1,4 @@
-package com.piggyplugins.BobTheHunter;
+package com.piggyplugins.BobTheBuilder;
 
 public enum State {
     ANIMATING,

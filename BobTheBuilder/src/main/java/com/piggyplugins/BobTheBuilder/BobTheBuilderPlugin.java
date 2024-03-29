@@ -1,9 +1,6 @@
-package com.piggyplugins.BobTheHunter;
+package com.piggyplugins.BobTheBuilder;
 
 import com.example.EthanApiPlugin.Collections.*;
-import com.example.EthanApiPlugin.Collections.query.ItemQuery;
-import com.example.EthanApiPlugin.Collections.query.PlayerQuery;
-import com.example.EthanApiPlugin.Collections.query.TileItemQuery;
 import com.example.EthanApiPlugin.Collections.query.TileObjectQuery;
 import com.example.EthanApiPlugin.EthanApiPlugin;
 import com.example.InteractionApi.BankInteraction;
@@ -14,8 +11,6 @@ import com.example.Packets.*;
 import com.google.inject.Provides;
 import com.piggyplugins.PiggyUtils.API.BankUtil;
 import com.piggyplugins.PiggyUtils.API.InventoryUtil;
-import com.piggyplugins.PiggyUtils.API.PlayerUtil;
-import com.piggyplugins.PiggyUtils.API.TileItemUtil;
 import com.piggyplugins.PiggyUtils.BreakHandler.ReflectBreakHandler;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
@@ -24,17 +19,14 @@ import net.runelite.api.widgets.Widget;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.input.KeyManager;
-import net.runelite.client.menus.WidgetMenuOption;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.HotkeyListener;
 
 import com.google.inject.Inject;
-import net.runelite.client.util.Text;
 import org.apache.commons.lang3.RandomUtils;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
