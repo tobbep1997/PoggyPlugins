@@ -71,10 +71,20 @@ public interface BobTheFarmerConfig extends Config {
     }
 
     @ConfigItem(
+            keyName = "additionalItems",
+            name = "Additional items",
+            description = "",
+            position = 1,
+            section = generalConfiguration
+    )
+    default String additionalItems() {
+        return "Rune pouch";
+    }
+    @ConfigItem(
             keyName = "debugDisableRestock",
             name = "debugDisableRestock",
             description = "",
-            position = 1,
+            position = 3,
             section = generalConfiguration
     )
     default boolean debugDisableRestock() {
@@ -94,11 +104,91 @@ public interface BobTheFarmerConfig extends Config {
     @ConfigItem(
             name = "Falador herb patch",
             keyName = "enableFalador",
-            description = "Requires Ardougne cloak 2 or higher",
+            description = "",
             position = 0,
             section = herbPatches
     )
     default boolean enableFalador() {
+        return false;
+    }
+    @ConfigItem(
+            name = "Port Phasmatys herb patch",
+            keyName = "enablePortPhasmatys",
+            description = "",
+            position = 0,
+            section = herbPatches
+    )
+    default boolean enablePortPhasmatys() {
+        return false;
+    }
+    @ConfigItem(
+            name = "Catherby herb patch",
+            keyName = "enableCatherby",
+            description = "",
+            position = 0,
+            section = herbPatches
+    )
+    default boolean enableCatherby() {
+        return false;
+    }
+    @ConfigItem(
+            name = "Hosidius herb patch",
+            keyName = "enableHosidius",
+            description = "",
+            position = 0,
+            section = herbPatches
+    )
+    default boolean enableHosidius() {
+        return false;
+    }
+    @ConfigItem(
+            name = "Troll Stronghold herb patch",
+            keyName = "enableTrollStronghold",
+            description = "",
+            position = 0,
+            section = herbPatches
+    )
+    default boolean enableTrollStronghold() {
+        return false;
+    }
+    @ConfigItem(
+            name = "Harmony Island herb patch",
+            keyName = "enableHarmonyIsland",
+            description = "",
+            position = 0,
+            section = herbPatches
+    )
+    default boolean enableHarmonyIsland() {
+        return false;
+    }
+    @ConfigItem(
+            name = "Weiss herb patch",
+            keyName = "enableWeiss",
+            description = "",
+            position = 0,
+            section = herbPatches
+    )
+    default boolean enableWeiss() {
+        return false;
+    }
+    @ConfigItem(
+            name = "Farming guild herb patch",
+            keyName = "enableFarmingGuild",
+            description = "",
+            position = 0,
+            section = herbPatches
+    )
+    default boolean enableFarmingGuild() {
+        return false;
+    }
+    @ConfigItem(
+            name = "Civitas illa Fortis herb patch",
+            keyName = "enableCivitasIllaFortis",
+            description = "",
+            position = 0,
+            section = herbPatches
+    )
+    default boolean enableCivitasIllaFortis() {
         return false;
     }
 

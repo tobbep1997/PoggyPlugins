@@ -75,6 +75,7 @@ public class BobTheFarmerPlugin extends Plugin {
 
     public ProcessState FarmingStateDisplay = null;
     private FarmingState ArdougneFarmingState = null;
+    private FarmingState FaladorFarmingState = null;
 
 
 
@@ -116,6 +117,7 @@ public class BobTheFarmerPlugin extends Plugin {
     private void ResetFarmingStates()
     {
         ArdougneFarmingState = new FarmingState(new String[] {""});
+        FaladorFarmingState = new FarmingState(new String[] {""});
     }
 
     private void handleState() {
@@ -276,8 +278,14 @@ public class BobTheFarmerPlugin extends Plugin {
             if (config.enableArdougne())
                 keepItems.addAll(Arrays.asList(ArdougneFarmingState.Tools));
 
-            //Deposit itemes that are not needed
-            List<Widget> bankInv = BankInventory.search().filter(widget -> !keepItems.contains(widget.getName())).result();
+            if (config.enableFalador())
+                keepItems.addAll(Arrays.asList(FaladorFarmingState.Tools));
+
+            int patches = 0;
+            patches += config.enableArdougne() ? 1 : 0;
+
+            //Deposit items that are not needed
+            List<Widget> bankInv = BankInventory.search().filter(widget -> keepItems.contains(widget.getName())).result();
             for (Widget item : bankInv) {
                 MousePackets.queueClickPacket();
                 BankInventoryInteraction.useItem(item, "Deposit-All");
@@ -291,18 +299,16 @@ public class BobTheFarmerPlugin extends Plugin {
                 }
             }
 
-            if (!TakeOutItemFromBank(config.seed(), -1)) {
+            if (!TakeOutItemFromBank(config.seed(), patches)) {
                 Stop("Missing " + config.seed() + " in bank");
                 return;
             }
 
-            int compostAmount = 0;
-            compostAmount += config.enableArdougne() ? 1 : 0;
-
-            if (!TakeOutItemFromBank(config.compost(), compostAmount)) {
+            if (!TakeOutItemFromBank(config.compost(), patches)) {
                 Stop("Missing " + config.seed() + " in bank");
                 return;
             }
+
 
             //Take out tools that are needed for the Ardougne herb patch
             if (config.enableArdougne())
@@ -317,7 +323,7 @@ public class BobTheFarmerPlugin extends Plugin {
 
                 boolean gotCloak = false;
                 for (int i = 4; i >= 2; i--) {
-                    if (TakeOutItemFromBank("Ardougne cloak " + Integer.toString(i), 1)) {
+                    if (TakeOutItemFromBank("Ardougne cloak " + i, 1)) {
                         gotCloak = true;
                         break;
                     }
@@ -384,26 +390,21 @@ public class BobTheFarmerPlugin extends Plugin {
     {
         ArdougneFarmingState.HerbPatchState = ProcessState.TRAVEL;
 
-        Inventory.search().withName("Ardougne cloak 4").first().ifPresentOrElse(item -> {
-            MousePackets.queueClickPacket();
-            InventoryInteraction.useItem(item, "Farm Teleport");
-            ArdougneFarmingState.HerbPatchState = ProcessState.PROCESS_HERB_PATCH;
-        }, () -> {
-            Inventory.search().withName("Ardougne cloak 3").first().ifPresentOrElse(item -> {
+        boolean teleported = false;
+        for (int i = 4; i >= 2; i--) {
+            Inventory.search().withName("Ardougne cloak " + i).first().ifPresent(item -> {
                 MousePackets.queueClickPacket();
                 InventoryInteraction.useItem(item, "Farm Teleport");
                 ArdougneFarmingState.HerbPatchState = ProcessState.PROCESS_HERB_PATCH;
-            }, () -> {
-                Inventory.search().withName("Ardougne cloak 2").first().ifPresentOrElse(item -> {
-                    MousePackets.queueClickPacket();
-                    InventoryInteraction.useItem(item, "Farm Teleport");
-                    ArdougneFarmingState.HerbPatchState = ProcessState.PROCESS_HERB_PATCH;
-                }, () -> {
-                    Stop("Missing Ardougne cloak 2");
-                });
             });
-        });
+        }
+        if (!teleported)
+        {
 
+
+            Stop("Missing Ardougne cloak 2 or higher");
+            return;
+        }
         //TODO: REMOVE ME
         ArdougneFarmingState.HerbPatchState = ProcessState.PROCESS_HERB_PATCH;
     }
