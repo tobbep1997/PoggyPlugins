@@ -1,9 +1,9 @@
-package com.piggyplugins.BobTheTemplate;
+package com.piggyplugins.BobTheFarmer;
 
 import net.runelite.client.config.*;
 
 @ConfigGroup("BobTheBlower")
-public interface BobTheTemplateConfig extends Config {
+public interface BobTheFarmerConfig extends Config {
     @ConfigSection(
             name = "Tick Delays",
             description = "Configuration for delays added to skilling activities",
@@ -13,8 +13,8 @@ public interface BobTheTemplateConfig extends Config {
     String tickDelaySection = "Tick Delays";
 
     @ConfigSection(
-            name = "Items selection",
-            description = "Configuration for items",
+            name = "Herb patches",
+            description = "Configuration for herb patches",
             position = 2
 
     )
@@ -30,12 +30,35 @@ public interface BobTheTemplateConfig extends Config {
         return Keybind.NOT_SET;
     }
 
+    @ConfigItem(
+            keyName = "seed",
+            name = "Seed",
+            description = "",
+            position = 1
+    )
+    default String seed() {
+        return "";
+    }
+
+    @ConfigItem(
+            name = "Ardougne herb patch",
+            keyName = "enableArdougne",
+            description = "Requiers Ardougne cloak 2",
+            position = 0,
+            section = tickDelaySection
+    )
+    default boolean enableArdougne() {
+        return false;
+    }
+
+
+
 
     @ConfigItem(
             name = "Tick Delay Min",
             keyName = "tickDelayMin",
             description = "Lower bound of tick delay, can set both to 0 to remove delay",
-            position = 4,
+            position = 0,
             section = tickDelaySection
     )
     default int tickdelayMin() {
@@ -46,7 +69,7 @@ public interface BobTheTemplateConfig extends Config {
             name = "Tick Delay Max",
             keyName = "tickDelayMax",
             description = "Upper bound of tick delay, can set both to 0 to remove delay",
-            position = 5,
+            position = 1,
             section = tickDelaySection
     )
     default int tickDelayMax() {

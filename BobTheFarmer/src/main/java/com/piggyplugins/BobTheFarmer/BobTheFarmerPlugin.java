@@ -1,4 +1,4 @@
-package com.piggyplugins.BobTheTemplate;
+package com.piggyplugins.BobTheFarmer;
 
 import com.example.EthanApiPlugin.Collections.*;
 import com.example.EthanApiPlugin.Collections.query.TileObjectQuery;
@@ -33,28 +33,29 @@ import java.util.Optional;
 
 
 @PluginDescriptor(
-        name = "<html><font color=\"#FF9DF9\">[PP]</font> Bob The Template</html>",
-        description = "Bob goes Templateing",
+        name = "<html><font color=\"#FF9DF9\">[PP]</font> Bob The Farmer</html>",
+        description = "Bob goes Farming",
         tags = {"ethan", "piggy", "skilling"}
 )
-public class BobTheTemplatePlugin extends Plugin {
+public class BobTheFarmerPlugin extends Plugin {
     @Inject
     private Client client;
     @Inject
-    BobTheTemplateConfig config;
+    BobTheFarmerConfig config;
     @Inject
     private KeyManager keyManager;
     @Inject
     private OverlayManager overlayManager;
     @Inject
-    private BobTheTemplateOverlay overlay;
+    private BobTheFarmerOverlay overlay;
     @Inject
     private ReflectBreakHandler breakHandler;
     State state;
     boolean started;
     private int timeout;
-    boolean takeBreak = false;
     public String debug = "";
+    private boolean hasStocked = false;
+
 
     @Override
     protected void startUp() throws Exception {
@@ -71,14 +72,15 @@ public class BobTheTemplatePlugin extends Plugin {
     }
 
     @Provides
-    private BobTheTemplateConfig getConfig(ConfigManager configManager) {
-        return configManager.getConfig(BobTheTemplateConfig.class);
+    private BobTheFarmerConfig getConfig(ConfigManager configManager) {
+        return configManager.getConfig(BobTheFarmerConfig.class);
     }
 
     @Subscribe
     private void onGameTick(GameTick event) {
         if (!EthanApiPlugin.loggedIn() || !started || breakHandler.isBreakActive(this)) {
             // We do an early return if the user isn't logged in
+            hasStocked = false;
             return;
         }
 
@@ -87,12 +89,14 @@ public class BobTheTemplatePlugin extends Plugin {
     }
 
     private void handleState() {
+        if (state == null)
+            return;
+
         switch (state) {
             case ANIMATING:
                 timeout = 5;
                 break;
             case HANDLE_BREAK:
-                takeBreak = false;
                 breakHandler.startBreak(this);
                 timeout = 10;
                 break;
@@ -115,8 +119,14 @@ public class BobTheTemplatePlugin extends Plugin {
         if (timeout > 0) {
             return State.TIMEOUT;
         }
+        if (!hasStocked)
+            return State.RESTOCK;
 
-        return State.RESTOCK;
+        if (config.enableArdougne())
+            return State.TRAVLE_ARDOUGNE;
+
+
+        return null;
     }
 
 
@@ -130,7 +140,21 @@ public class BobTheTemplatePlugin extends Plugin {
                 BankInventoryInteraction.useItem(item, "Deposit-All");
             }
 
+            BankUtil.nameContainsNoCase(config.items1()).first().ifPresentOrElse(widget ->
+                        BankInteraction.withdrawX(widget, config.items1Amount()),
+                    () -> {
+                        started = false;
+                        this.state = State.TIMEOUT;
+                        breakHandler.stopPlugin(this);
+            });
 
+            BankUtil.nameContainsNoCase(config.items2()).first().ifPresentOrElse(widget ->
+                            BankInteraction.withdrawX(widget, config.items2Amount()),
+                    () -> {
+                        started = false;
+                        this.state = State.TIMEOUT;
+                        breakHandler.stopPlugin(this);
+                    });
             setTimeout();
         }
         else {
@@ -147,6 +171,7 @@ public class BobTheTemplatePlugin extends Plugin {
             }
         }
     }
+
 
     private void setTimeout() {
         timeout = RandomUtils.nextInt(config.tickdelayMin(), config.tickDelayMax());
