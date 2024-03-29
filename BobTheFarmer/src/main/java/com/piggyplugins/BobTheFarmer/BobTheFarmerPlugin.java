@@ -7,11 +7,13 @@ import com.example.InteractionApi.BankInteraction;
 import com.example.InteractionApi.BankInventoryInteraction;
 import com.example.InteractionApi.InventoryInteraction;
 import com.example.InteractionApi.TileObjectInteraction;
+import com.example.PacketUtils.WidgetInfoExtended;
 import com.example.Packets.*;
 import com.google.inject.Provides;
 import com.piggyplugins.PiggyUtils.API.BankUtil;
 import com.piggyplugins.PiggyUtils.BreakHandler.ReflectBreakHandler;
 import net.runelite.api.*;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.config.ConfigManager;
@@ -25,13 +27,8 @@ import net.runelite.client.util.HotkeyListener;
 import com.google.inject.Inject;
 import org.apache.commons.lang3.RandomUtils;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.Callable;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 
 class FarmingState
@@ -39,9 +36,15 @@ class FarmingState
     public String[] Tools = {};
     public ProcessState HerbPatchState = ProcessState.NOT_STARTED;
 
+    public Dictionary<String, WorldPoint[]> Paths = new Hashtable<>();
+
     public FarmingState(String[] tools)
     {
         this.Tools = tools;
+    }
+    public void SetPath(WorldPoint[] path, String key)
+    {
+        Paths.put(key, path);
     }
 }
 
@@ -64,18 +67,26 @@ public class BobTheFarmerPlugin extends Plugin {
     @Inject
     private ReflectBreakHandler breakHandler;
     State state;
+    WorldPoint debugPoint = null;
     boolean started;
     boolean herbRun;
     boolean treeRun;
     private int timeout;
     public String debug = "";
     private boolean hasStocked = false;
-
     private final String[] Tools =  {"Magic secateurs", "Spade", "Rake", "Seed dibber" };
-
     public ProcessState FarmingStateDisplay = null;
     private FarmingState ArdougneFarmingState = null;
     private FarmingState FaladorFarmingState = null;
+    private FarmingState PortPhasmatysFarmingState = null;
+    private FarmingState CatherbyFarmingState = null;
+    private FarmingState HosidiusFarmingState = null;
+    private FarmingState TrollStrongholdFarmingState = null;
+    private FarmingState HarmonyIslandFarmingState = null;
+    private FarmingState WeissFarmingState = null;
+    private FarmingState FarmingGuildFarmingState = null;
+    private FarmingState CivitasIllaFortisFarmingState = null;
+
 
 
 
@@ -83,6 +94,7 @@ public class BobTheFarmerPlugin extends Plugin {
     protected void startUp() throws Exception {
         keyManager.registerKeyListener(hotkeyListenerToggle);
         keyManager.registerKeyListener(hotkeyListenerHerbRun);
+        keyManager.registerKeyListener(hotkeyListenerDebug);
         breakHandler.registerPlugin(this);
         this.overlayManager.add(overlay);
     }
@@ -91,6 +103,7 @@ public class BobTheFarmerPlugin extends Plugin {
     protected void shutDown() throws Exception {
         keyManager.unregisterKeyListener(hotkeyListenerToggle);
         keyManager.unregisterKeyListener(hotkeyListenerHerbRun);
+        keyManager.unregisterKeyListener(hotkeyListenerDebug);
         breakHandler.unregisterPlugin(this);
         this.overlayManager.remove(overlay);
     }
@@ -116,8 +129,18 @@ public class BobTheFarmerPlugin extends Plugin {
 
     private void ResetFarmingStates()
     {
-        ArdougneFarmingState = new FarmingState(new String[] {""});
-        FaladorFarmingState = new FarmingState(new String[] {""});
+        ArdougneFarmingState = new FarmingState(new String[] {});
+        ArdougneFarmingState.SetPath(Paths.ArdougneTeleportPath, "Teleport");
+
+        FaladorFarmingState = new FarmingState(new String[] {});
+        PortPhasmatysFarmingState = new FarmingState(new String[] {});
+        CatherbyFarmingState = new FarmingState(new String[] {});
+        HosidiusFarmingState = new FarmingState(new String[] {});
+        TrollStrongholdFarmingState = new FarmingState(new String[] {});
+        HarmonyIslandFarmingState = new FarmingState(new String[] {});
+        WeissFarmingState = new FarmingState(new String[] {});
+        FarmingGuildFarmingState = new FarmingState(new String[] {});
+        CivitasIllaFortisFarmingState = new FarmingState(new String[] {});
     }
 
     private void handleState() {
@@ -195,9 +218,13 @@ public class BobTheFarmerPlugin extends Plugin {
         if (TileObjects.search().withName("Herbs").withAction("Pick").first().isPresent())
             return ProcessState.HARVEST;
 
+        //Harvest herbs if there is any
+        if (TileObjects.search().withName("Herbs").withAction("Clear").first().isPresent())
+            return ProcessState.HARVEST;
+
         //Plant new herbs
         if (TileObjects.search().nameContains("Herb patch").withAction("Rake").first().isPresent()){
-            return ProcessState.CLEARING;
+            return ProcessState.RAKE;
         }
 
         //Check if herb patch is ready for planting
@@ -231,7 +258,7 @@ public class BobTheFarmerPlugin extends Plugin {
                     TileObjectInteraction.interact(herb, "Pick");
                 });
                 break;
-            case CLEARING:
+            case RAKE:
                 //Plant new herbs
                 TileObjects.search().nameContains("Herb patch").withAction("Rake").first().ifPresent(tileObject -> {
                     MousePackets.queueClickPacket();
@@ -281,8 +308,41 @@ public class BobTheFarmerPlugin extends Plugin {
             if (config.enableFalador())
                 keepItems.addAll(Arrays.asList(FaladorFarmingState.Tools));
 
+            if (config.enablePortPhasmatys())
+                keepItems.addAll(Arrays.asList(PortPhasmatysFarmingState.Tools));
+
+            if (config.enableCatherby())
+                keepItems.addAll(Arrays.asList(CatherbyFarmingState.Tools));
+
+            if (config.enableHosidius())
+                keepItems.addAll(Arrays.asList(HosidiusFarmingState.Tools));
+
+            if (config.enableTrollStronghold())
+                keepItems.addAll(Arrays.asList(TrollStrongholdFarmingState.Tools));
+
+            if (config.enableHarmonyIsland())
+                keepItems.addAll(Arrays.asList(HarmonyIslandFarmingState.Tools));
+
+            if (config.enableWeiss())
+                keepItems.addAll(Arrays.asList(WeissFarmingState.Tools));
+
+            if (config.enableFarmingGuild())
+                keepItems.addAll(Arrays.asList(FarmingGuildFarmingState.Tools));
+
+            if (config.enableCivitasIllaFortis())
+                keepItems.addAll(Arrays.asList(CivitasIllaFortisFarmingState.Tools));
+
             int patches = 0;
             patches += config.enableArdougne() ? 1 : 0;
+            patches += config.enableFalador() ? 1 : 0;
+            patches += config.enablePortPhasmatys() ? 1 : 0;
+            patches += config.enableCatherby() ? 1 : 0;
+            patches += config.enableHosidius() ? 1 : 0;
+            patches += config.enableTrollStronghold() ? 1 : 0;
+            patches += config.enableHarmonyIsland() ? 1 : 0;
+            patches += config.enableWeiss() ? 1 : 0;
+            patches += config.enableFarmingGuild() ? 1 : 0;
+            patches += config.enableCivitasIllaFortis() ? 1 : 0;
 
             //Deposit items that are not needed
             List<Widget> bankInv = BankInventory.search().filter(widget -> keepItems.contains(widget.getName())).result();
@@ -299,16 +359,26 @@ public class BobTheFarmerPlugin extends Plugin {
                 }
             }
 
+            //Take out seeds
             if (!TakeOutItemFromBank(config.seed(), patches)) {
                 Stop("Missing " + config.seed() + " in bank");
                 return;
             }
 
+            //Take out compost
             if (!TakeOutItemFromBank(config.compost(), patches)) {
                 Stop("Missing " + config.seed() + " in bank");
                 return;
             }
 
+            //Take out additional items
+            String[] additionalItems = config.additionalItems().split(",");
+            for (String tool : additionalItems) {
+                if (!TakeOutItemFromBank(tool, 1)) {
+                    Stop("Missing " + tool + " in bank");
+                    return;
+                }
+            }
 
             //Take out tools that are needed for the Ardougne herb patch
             if (config.enableArdougne())
@@ -392,21 +462,41 @@ public class BobTheFarmerPlugin extends Plugin {
 
         boolean teleported = false;
         for (int i = 4; i >= 2; i--) {
-            Inventory.search().withName("Ardougne cloak " + i).first().ifPresent(item -> {
+            if (Inventory.search().withName("Ardougne cloak " + i).first().isPresent())
+            {
+                teleported = true;
                 MousePackets.queueClickPacket();
-                InventoryInteraction.useItem(item, "Farm Teleport");
+                InventoryInteraction.useItem(
+                        Inventory.search().withName("Ardougne cloak " + i).first().get(),
+                        "Farm Teleport");
                 ArdougneFarmingState.HerbPatchState = ProcessState.PROCESS_HERB_PATCH;
-            });
+            }
+
         }
         if (!teleported)
         {
-
-
-            Stop("Missing Ardougne cloak 2 or higher");
-            return;
+            if (!CastTeleportSpell(WidgetInfoExtended.SPELL_ARDOUGNE_TELEPORT))
+            {
+                Stop("Couldn't teleport to Ardougne");
+            }
+            else
+            {
+                ArdougneFarmingState.HerbPatchState = ProcessState.PROCESS_HERB_PATCH;
+            }
         }
         //TODO: REMOVE ME
         ArdougneFarmingState.HerbPatchState = ProcessState.PROCESS_HERB_PATCH;
+    }
+
+    private boolean CastTeleportSpell(WidgetInfoExtended spell)
+    {
+        Optional<Widget> teleportSpellIcon = Widgets.search().withId(spell.getPackedId()).first();
+        if (teleportSpellIcon.isPresent()) {
+            MousePackets.queueClickPacket();
+            WidgetPackets.queueWidgetAction(teleportSpellIcon.get(), "Cast");
+        }
+
+        return false;
     }
 
     private void SetDisplayState(FarmingState state)
@@ -416,6 +506,15 @@ public class BobTheFarmerPlugin extends Plugin {
 
     private void setTimeout() {
         timeout = RandomUtils.nextInt(config.tickdelayMin(), config.tickDelayMax());
+    }
+
+    public void Stop(String reason)
+    {
+        started = false;
+        debug = reason;
+        this.state = State.TIMEOUT;
+        breakHandler.stopPlugin(this);
+        herbRun = false;
     }
 
     private final HotkeyListener hotkeyListenerToggle = new HotkeyListener(() -> config.toggle()) {
@@ -432,13 +531,16 @@ public class BobTheFarmerPlugin extends Plugin {
         }
     };
 
-    public void Stop(String reason)
+    private final HotkeyListener hotkeyListenerDebug = new HotkeyListener(() -> config.debugKey()) {
+        @Override
+        public void hotkeyPressed() {
+            Debug();
+        }
+    };
+
+    public void Debug()
     {
-        started = false;
-        debug = reason;
-        this.state = State.TIMEOUT;
-        breakHandler.stopPlugin(this);
-        herbRun = false;
+        debugPoint = client.getLocalPlayer().getWorldLocation();
     }
 
     public void herbRun()
@@ -454,6 +556,8 @@ public class BobTheFarmerPlugin extends Plugin {
             return;
         }
         started = !started;
+
+        debug = "";
 
         if (!started) {
             this.state = State.TIMEOUT;

@@ -29,6 +29,15 @@ public interface BobTheFarmerConfig extends Config {
     String generalConfiguration = "General configuration";
 
     @ConfigItem(
+            keyName = "toggle",
+            name = "Toggle",
+            description = "",
+            position = 1
+    )
+    default Keybind toggle() {
+        return Keybind.NOT_SET;
+    }
+    @ConfigItem(
             keyName = "doHerbRun",
             name = "Do Herb run",
             description = "",
@@ -38,14 +47,16 @@ public interface BobTheFarmerConfig extends Config {
         return Keybind.NOT_SET;
     }
     @ConfigItem(
-            keyName = "toggle",
-            name = "Toggle",
+            keyName = "debugKey",
+            name = "Bob the debugger",
             description = "",
-            position = 1
+            position = 2
     )
-    default Keybind toggle() {
+    default Keybind debugKey() {
         return Keybind.NOT_SET;
     }
+
+
 
     @ConfigItem(
             keyName = "seed",

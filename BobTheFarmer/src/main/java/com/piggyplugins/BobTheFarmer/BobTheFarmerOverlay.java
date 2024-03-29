@@ -50,6 +50,12 @@ public class BobTheFarmerOverlay extends OverlayPanel {
                 .right(plugin.debug)
                 .rightColor(Color.WHITE)
                 .build());
+        panelComponent.getChildren().add(LineComponent.builder()
+                .left("POINT: ")
+                .leftColor(new Color(255, 157, 249))
+                .right(plugin.debugPoint.toString())
+                .rightColor(Color.WHITE)
+                .build());
 
 
 

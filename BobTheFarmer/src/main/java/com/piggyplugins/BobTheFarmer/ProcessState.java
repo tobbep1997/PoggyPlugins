@@ -6,11 +6,13 @@ public enum ProcessState
     TRAVEL(1),
     PROCESS_HERB_PATCH(2),
     HARVEST(3),
-    CLEARING(4),
-    PLANTING(5),
-    COMPOST(6),
-    EMPTY_INVENTORY(7),
-    DONE(8);
+    CLEAR(4),
+    RAKE(5),
+    PLANTING(6),
+    COMPOST(7),
+    EMPTY_INVENTORY(8),
+    NOTE(9),
+    DONE(10);
 
     public final int Index;
     private ProcessState(int index)
