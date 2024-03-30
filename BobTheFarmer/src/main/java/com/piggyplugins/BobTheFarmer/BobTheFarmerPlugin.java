@@ -76,15 +76,15 @@ public class BobTheFarmerPlugin extends Plugin {
     private final String[] Tools =  {"Magic secateurs", "Spade", "Rake", "Seed dibber" };
     public ProcessState FarmingStateDisplay = null;
     private FarmingState ArdougneFarmingState = null;
-    private FarmingState FaladorFarmingState = null;
-    private FarmingState PortPhasmatysFarmingState = null;
     private FarmingState CatherbyFarmingState = null;
-    private FarmingState HosidiusFarmingState = null;
-    private FarmingState TrollStrongholdFarmingState = null;
-    private FarmingState HarmonyIslandFarmingState = null;
-    private FarmingState WeissFarmingState = null;
-    private FarmingState FarmingGuildFarmingState = null;
     private FarmingState CivitasIllaFortisFarmingState = null;
+    private FarmingState FaladorFarmingState = null;
+    private FarmingState FarmingGuildFarmingState = null;
+    private FarmingState HarmonyIslandFarmingState = null;
+    private FarmingState HosidiusFarmingState = null;
+    private FarmingState PortPhasmatysFarmingState = null;
+    private FarmingState TrollStrongholdFarmingState = null;
+    private FarmingState WeissFarmingState = null;
 
 
 
@@ -146,18 +146,25 @@ public class BobTheFarmerPlugin extends Plugin {
         ArdougneFarmingState = new FarmingState(new String[] {});
         ArdougneFarmingState.SetPath(Paths.ArdougneTeleportPath, "Teleport");
 
+        CatherbyFarmingState = new FarmingState(new String[] {});
+
+        CivitasIllaFortisFarmingState = new FarmingState(new String[] {});
+
         FaladorFarmingState = new FarmingState(new String[] {});
         FaladorFarmingState.SetPath(Paths.FaladorTeleportPath1, "Teleport1");
         FaladorFarmingState.SetPath(Paths.FaladorTeleportPath2, "Teleport2");
 
-        PortPhasmatysFarmingState = new FarmingState(new String[] {});
-        CatherbyFarmingState = new FarmingState(new String[] {});
-        HosidiusFarmingState = new FarmingState(new String[] {});
-        TrollStrongholdFarmingState = new FarmingState(new String[] {});
-        HarmonyIslandFarmingState = new FarmingState(new String[] {});
-        WeissFarmingState = new FarmingState(new String[] {});
         FarmingGuildFarmingState = new FarmingState(new String[] {});
-        CivitasIllaFortisFarmingState = new FarmingState(new String[] {});
+
+        HarmonyIslandFarmingState = new FarmingState(new String[] {});
+
+        HosidiusFarmingState = new FarmingState(new String[] {});
+
+        PortPhasmatysFarmingState = new FarmingState(new String[] {});
+
+        TrollStrongholdFarmingState = new FarmingState(new String[] {});
+
+        WeissFarmingState = new FarmingState(new String[] {});
     }
 
     private void handleState() {
@@ -359,45 +366,36 @@ public class BobTheFarmerPlugin extends Plugin {
 
             if (config.enableArdougne())
                 keepItems.addAll(Arrays.asList(ArdougneFarmingState.Tools));
-
-            if (config.enableFalador())
-                keepItems.addAll(Arrays.asList(FaladorFarmingState.Tools));
-
-            if (config.enablePortPhasmatys())
-                keepItems.addAll(Arrays.asList(PortPhasmatysFarmingState.Tools));
-
             if (config.enableCatherby())
                 keepItems.addAll(Arrays.asList(CatherbyFarmingState.Tools));
-
-            if (config.enableHosidius())
-                keepItems.addAll(Arrays.asList(HosidiusFarmingState.Tools));
-
-            if (config.enableTrollStronghold())
-                keepItems.addAll(Arrays.asList(TrollStrongholdFarmingState.Tools));
-
+            if (config.enableCivitasIllaFortis())
+                keepItems.addAll(Arrays.asList(CivitasIllaFortisFarmingState.Tools));
+            if (config.enableFalador())
+                keepItems.addAll(Arrays.asList(FaladorFarmingState.Tools));
+            if (config.enableFarmingGuild())
+                keepItems.addAll(Arrays.asList(FarmingGuildFarmingState.Tools));
             if (config.enableHarmonyIsland())
                 keepItems.addAll(Arrays.asList(HarmonyIslandFarmingState.Tools));
-
+            if (config.enableHosidius())
+                keepItems.addAll(Arrays.asList(HosidiusFarmingState.Tools));
+            if (config.enablePortPhasmatys())
+                keepItems.addAll(Arrays.asList(PortPhasmatysFarmingState.Tools));
+            if (config.enableTrollStronghold())
+                keepItems.addAll(Arrays.asList(TrollStrongholdFarmingState.Tools));
             if (config.enableWeiss())
                 keepItems.addAll(Arrays.asList(WeissFarmingState.Tools));
 
-            if (config.enableFarmingGuild())
-                keepItems.addAll(Arrays.asList(FarmingGuildFarmingState.Tools));
-
-            if (config.enableCivitasIllaFortis())
-                keepItems.addAll(Arrays.asList(CivitasIllaFortisFarmingState.Tools));
-
             int patches = 0;
             patches += config.enableArdougne() ? 1 : 0;
-            patches += config.enableFalador() ? 1 : 0;
-            patches += config.enablePortPhasmatys() ? 1 : 0;
             patches += config.enableCatherby() ? 1 : 0;
-            patches += config.enableHosidius() ? 1 : 0;
-            patches += config.enableTrollStronghold() ? 1 : 0;
-            patches += config.enableHarmonyIsland() ? 1 : 0;
-            patches += config.enableWeiss() ? 1 : 0;
-            patches += config.enableFarmingGuild() ? 1 : 0;
             patches += config.enableCivitasIllaFortis() ? 1 : 0;
+            patches += config.enableFalador() ? 1 : 0;
+            patches += config.enableFarmingGuild() ? 1 : 0;
+            patches += config.enableHarmonyIsland() ? 1 : 0;
+            patches += config.enableHosidius() ? 1 : 0;
+            patches += config.enablePortPhasmatys() ? 1 : 0;
+            patches += config.enableTrollStronghold() ? 1 : 0;
+            patches += config.enableWeiss() ? 1 : 0;
 
             //Deposit items that are not needed
             List<Widget> bankInv = BankInventory.search().filter(widget -> keepItems.contains(widget.getName())).result();

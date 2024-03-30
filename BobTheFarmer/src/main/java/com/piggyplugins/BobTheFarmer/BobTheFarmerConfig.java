@@ -113,95 +113,100 @@ public interface BobTheFarmerConfig extends Config {
         return false;
     }
     @ConfigItem(
-            name = "Falador herb patch",
-            keyName = "enableFalador",
-            description = "",
-            position = 0,
-            section = herbPatches
-    )
-    default boolean enableFalador() {
-        return false;
-    }
-    @ConfigItem(
-            name = "Port Phasmatys herb patch",
-            keyName = "enablePortPhasmatys",
-            description = "",
-            position = 0,
-            section = herbPatches
-    )
-    default boolean enablePortPhasmatys() {
-        return false;
-    }
-    @ConfigItem(
             name = "Catherby herb patch",
             keyName = "enableCatherby",
             description = "",
-            position = 0,
+            position = 1,
             section = herbPatches
     )
     default boolean enableCatherby() {
         return false;
     }
     @ConfigItem(
-            name = "Hosidius herb patch",
-            keyName = "enableHosidius",
+            name = "Civitas illa Fortis herb patch",
+            keyName = "enableCivitasIllaFortis",
             description = "",
-            position = 0,
+            position = 2,
             section = herbPatches
     )
-    default boolean enableHosidius() {
+    default boolean enableCivitasIllaFortis() {
         return false;
     }
     @ConfigItem(
-            name = "Troll Stronghold herb patch",
-            keyName = "enableTrollStronghold",
-            description = "",
-            position = 0,
+            name = "Falador herb patch",
+            keyName = "enableFalador",
+            description = "Requires Explorer's ring 2 or higher",
+            position = 3,
             section = herbPatches
     )
-    default boolean enableTrollStronghold() {
-        return false;
-    }
-    @ConfigItem(
-            name = "Harmony Island herb patch",
-            keyName = "enableHarmonyIsland",
-            description = "",
-            position = 0,
-            section = herbPatches
-    )
-    default boolean enableHarmonyIsland() {
-        return false;
-    }
-    @ConfigItem(
-            name = "Weiss herb patch",
-            keyName = "enableWeiss",
-            description = "",
-            position = 0,
-            section = herbPatches
-    )
-    default boolean enableWeiss() {
+    default boolean enableFalador() {
         return false;
     }
     @ConfigItem(
             name = "Farming guild herb patch",
             keyName = "enableFarmingGuild",
             description = "",
-            position = 0,
+            position = 4,
             section = herbPatches
     )
     default boolean enableFarmingGuild() {
         return false;
     }
     @ConfigItem(
-            name = "Civitas illa Fortis herb patch",
-            keyName = "enableCivitasIllaFortis",
+            name = "Harmony Island herb patch",
+            keyName = "enableHarmonyIsland",
             description = "",
-            position = 0,
+            position = 5,
             section = herbPatches
     )
-    default boolean enableCivitasIllaFortis() {
+    default boolean enableHarmonyIsland() {
         return false;
     }
+    @ConfigItem(
+            name = "Hosidius herb patch",
+            keyName = "enableHosidius",
+            description = "",
+            position = 5,
+            section = herbPatches
+    )
+    default boolean enableHosidius() {
+        return false;
+    }
+    @ConfigItem(
+            name = "Port Phasmatys herb patch",
+            keyName = "enablePortPhasmatys",
+            description = "",
+            position = 6,
+            section = herbPatches
+    )
+    default boolean enablePortPhasmatys() {
+        return false;
+    }
+
+
+    @ConfigItem(
+            name = "Troll Stronghold herb patch",
+            keyName = "enableTrollStronghold",
+            description = "",
+            position = 7,
+            section = herbPatches
+    )
+    default boolean enableTrollStronghold() {
+        return false;
+    }
+
+    @ConfigItem(
+            name = "Weiss herb patch",
+            keyName = "enableWeiss",
+            description = "",
+            position = 8,
+            section = herbPatches
+    )
+    default boolean enableWeiss() {
+        return false;
+    }
+
+
 
     @ConfigItem(
             name = "Tick Delay Min",
