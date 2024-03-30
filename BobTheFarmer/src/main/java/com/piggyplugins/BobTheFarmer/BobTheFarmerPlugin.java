@@ -225,12 +225,12 @@ public class BobTheFarmerPlugin extends Plugin {
 
         if (config.enableCatherby() && CatherbyFarmingState.HerbPatchState.Index < 2)
         {
-            return State.TRAVEL_FALADOR;
+            return State.TRAVEL_CATHERBY;
         }
         if (config.enableCatherby() && CatherbyFarmingState.HerbPatchState.Index >= 2 &&
                 CatherbyFarmingState.HerbPatchState != ProcessState.DONE)
         {
-            return State.FALADOR;
+            return State.CATHERBY;
         }
 
         if (config.enableFalador() && FaladorFarmingState.HerbPatchState.Index < 2)
@@ -455,6 +455,18 @@ public class BobTheFarmerPlugin extends Plugin {
                 }
             }
 
+            //Take out tools that are needed for the Catherby herb patch
+            if (config.enableCatherby())
+            {
+                for (String tool : CatherbyFarmingState.Tools)
+                {
+                    if (!TakeOutItemFromBank(tool, 1)) {
+                        Stop("Missing " + tool + " in bank");
+                        return;
+                    }
+                }
+            }
+
             //Take out tools that are needed for the Falador herb patch
             if (config.enableFalador())
             {
@@ -671,7 +683,7 @@ public class BobTheFarmerPlugin extends Plugin {
 
         if (CatherbyFarmingState.PathIndex == 0)
         {
-            if (CastTeleportSpell(WidgetInfoExtended.SPELL_CATHERBY_TELEPORT))
+            if (CastTeleportSpell(WidgetInfoExtended.SPELL_CAMELOT_TELEPORT))
             {
                 ResetPath();
                 CatherbyFarmingState.PathIndex = 1;
@@ -679,7 +691,7 @@ public class BobTheFarmerPlugin extends Plugin {
             }
             else
             {
-                Stop("Couldn't teleport to Catherby");
+                Stop("Couldn't teleport to Camelot");
             }
         }
         if (CatherbyFarmingState.PathIndex == 1)
