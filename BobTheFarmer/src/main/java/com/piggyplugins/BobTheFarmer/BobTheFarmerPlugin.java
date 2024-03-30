@@ -360,7 +360,7 @@ public class BobTheFarmerPlugin extends Plugin {
                 state.HerbPatchState = ProcessState.DONE;
                 break;
         }
-        if (state.HerbPatchState != ProcessState.PROCESS_HERB_PATCH)
+        if (state.HerbPatchState != ProcessState.PROCESS_HERB_PATCH && state.HerbPatchState != ProcessState.EMPTY_INVENTORY)
             setTimeout();
     }
 
