@@ -39,9 +39,9 @@ public class BobTheFarmerOverlay extends OverlayPanel {
                 .rightColor(Color.WHITE)
                 .build());
         panelComponent.getChildren().add(LineComponent.builder()
-                .left("Farming State: ")
+                .left(plugin.state==null || plugin.FarmingStateDisplay==null || !plugin.started ? "" : plugin.FarmingStateDisplay.Name)
                 .leftColor(new Color(255, 157, 249))
-                .right(plugin.state==null || plugin.FarmingStateDisplay==null || !plugin.started ? "" : plugin.FarmingStateDisplay.name())
+                .right(plugin.state==null || plugin.FarmingStateDisplay==null || !plugin.started ? "" : plugin.FarmingStateDisplay.HerbPatchState.name())
                 .rightColor(Color.WHITE)
                 .build());
         panelComponent.getChildren().add(LineComponent.builder()

@@ -8,7 +8,6 @@ import com.example.PacketUtils.WidgetInfoExtended;
 import com.example.Packets.*;
 import com.google.inject.Provides;
 import com.piggyplugins.PiggyUtils.API.BankUtil;
-import com.piggyplugins.PiggyUtils.BreakHandler.ReflectBreakHandler;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ChatMessage;
@@ -31,13 +30,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 class FarmingState
 {
+    public String Name = "";
     public String[] Tools = {};
     public ProcessState HerbPatchState = ProcessState.NOT_STARTED;
     public Dictionary<String, WorldPoint[]> Paths = new Hashtable<>();
     public int PathIndex = 0;
 
-    public FarmingState(String[] tools)
+    public FarmingState(String name,String[] tools)
     {
+        this.Name = name;
         this.Tools = tools;
         this.PathIndex = 0;
     }
@@ -63,8 +64,6 @@ public class BobTheFarmerPlugin extends Plugin {
     private OverlayManager overlayManager;
     @Inject
     private BobTheFarmerOverlay overlay;
-    @Inject
-    private ReflectBreakHandler breakHandler;
     State state;
     WorldPoint debugPoint = new WorldPoint(0,0,0);
     boolean started;
@@ -74,7 +73,7 @@ public class BobTheFarmerPlugin extends Plugin {
     public String debug = "";
     private boolean hasStocked = false;
     private final String[] Tools =  {"Magic secateurs", "Spade", "Rake", "Seed dibber" };
-    public ProcessState FarmingStateDisplay = null;
+    FarmingState FarmingStateDisplay = null;
     private FarmingState ArdougneFarmingState = null;
     private FarmingState CatherbyFarmingState = null;
     private FarmingState CivitasIllaFortisFarmingState = null;
@@ -94,7 +93,6 @@ public class BobTheFarmerPlugin extends Plugin {
         keyManager.registerKeyListener(hotkeyListenerToggle);
         keyManager.registerKeyListener(hotkeyListenerHerbRun);
         keyManager.registerKeyListener(hotkeyListenerDebug);
-        breakHandler.registerPlugin(this);
         this.overlayManager.add(overlay);
     }
 
@@ -103,7 +101,6 @@ public class BobTheFarmerPlugin extends Plugin {
         keyManager.unregisterKeyListener(hotkeyListenerToggle);
         keyManager.unregisterKeyListener(hotkeyListenerHerbRun);
         keyManager.unregisterKeyListener(hotkeyListenerDebug);
-        breakHandler.unregisterPlugin(this);
         this.overlayManager.remove(overlay);
     }
 
@@ -129,7 +126,7 @@ public class BobTheFarmerPlugin extends Plugin {
     }
     @Subscribe
     private void onGameTick(GameTick event) {
-        if (!EthanApiPlugin.loggedIn() || (!started || !(herbRun || treeRun)) || breakHandler.isBreakActive(this)) {
+        if (!EthanApiPlugin.loggedIn() || (!started || !(herbRun || treeRun))) {
             // We do an early return if the user isn't logged in
             hasStocked = false;
             herbRun = false;
@@ -143,28 +140,29 @@ public class BobTheFarmerPlugin extends Plugin {
 
     private void ResetFarmingStates()
     {
-        ArdougneFarmingState = new FarmingState(new String[] {});
-        ArdougneFarmingState.SetPath(Paths.ArdougneTeleportPath, "Teleport");
+        ArdougneFarmingState = new FarmingState("Ardougne", new String[] {});
+        ArdougneFarmingState.SetPath(Paths.ArdougneTeleportPath1, "Teleport");
 
-        CatherbyFarmingState = new FarmingState(new String[] {});
+        CatherbyFarmingState = new FarmingState("Catherby", new String[] {});
+        CatherbyFarmingState.SetPath(Paths.CatherbyTeleportPath1, "Camelot");
 
-        CivitasIllaFortisFarmingState = new FarmingState(new String[] {});
+        CivitasIllaFortisFarmingState = new FarmingState("Civitas", new String[] {});
 
-        FaladorFarmingState = new FarmingState(new String[] {});
+        FaladorFarmingState = new FarmingState("Falador", new String[] {});
         FaladorFarmingState.SetPath(Paths.FaladorTeleportPath1, "Teleport1");
         FaladorFarmingState.SetPath(Paths.FaladorTeleportPath2, "Teleport2");
 
-        FarmingGuildFarmingState = new FarmingState(new String[] {});
+        FarmingGuildFarmingState = new FarmingState("Farming guild", new String[] {});
 
-        HarmonyIslandFarmingState = new FarmingState(new String[] {});
+        HarmonyIslandFarmingState = new FarmingState("Harmony", new String[] {});
 
-        HosidiusFarmingState = new FarmingState(new String[] {});
+        HosidiusFarmingState = new FarmingState("Hosidius", new String[] {});
 
-        PortPhasmatysFarmingState = new FarmingState(new String[] {});
+        PortPhasmatysFarmingState = new FarmingState("Port Phasmatys", new String[] {});
 
-        TrollStrongholdFarmingState = new FarmingState(new String[] {});
+        TrollStrongholdFarmingState = new FarmingState("Troll Stronghold", new String[] {});
 
-        WeissFarmingState = new FarmingState(new String[] {});
+        WeissFarmingState = new FarmingState("Weiss", new String[] {});
     }
 
     private void handleState() {
@@ -174,41 +172,37 @@ public class BobTheFarmerPlugin extends Plugin {
         switch (state) {
             case ANIMATING:
                 break;
-            case HANDLE_BREAK:
-                breakHandler.startBreak(this);
-                timeout = 10;
-                break;
             case TIMEOUT:
                 timeout--;
                 break;
             case RESTOCK:
                 Restock();
                 break;
-            case TRAVLE_ARDOUGNE:
-                TravelArdougne();
-                SetDisplayState(ArdougneFarmingState);
+            case TRAVEL_ARDOUGNE:
+                TravelToArdougne(ArdougneFarmingState);
                 break;
             case ARDOUGNE:
                 FarmHerbs(ArdougneFarmingState);
                 break;
-            case TRAVLE_FALADOR:
-                TravelToFalador();
-                SetDisplayState(FaladorFarmingState);
+            case TRAVEL_CATHERBY:
+                TravelToCatherby(CatherbyFarmingState);
+                break;
+            case CATHERBY:
+                FarmHerbs(CatherbyFarmingState);
+                break;
+            case TRAVEL_FALADOR:
+                TravelToFalador(FaladorFarmingState);
                 break;
             case FALADOR:
                 FarmHerbs(FaladorFarmingState);
                 break;
+
         }
     }
 
     private State getNextState() {
-
-
         if (EthanApiPlugin.isMoving() || client.getLocalPlayer().getAnimation() != -1) {
             return State.ANIMATING;
-        }
-        if (breakHandler.shouldBreak(this)) {
-            return State.HANDLE_BREAK;
         }
         if (timeout > 0) {
             return State.TIMEOUT;
@@ -221,7 +215,7 @@ public class BobTheFarmerPlugin extends Plugin {
 
         if (config.enableArdougne() && ArdougneFarmingState.HerbPatchState.Index < 2)
         {
-            return State.TRAVLE_ARDOUGNE;
+            return State.TRAVEL_ARDOUGNE;
         }
         if (config.enableArdougne() && ArdougneFarmingState.HerbPatchState.Index >= 2 &&
                 ArdougneFarmingState.HerbPatchState != ProcessState.DONE)
@@ -229,9 +223,19 @@ public class BobTheFarmerPlugin extends Plugin {
             return State.ARDOUGNE;
         }
 
+        if (config.enableCatherby() && CatherbyFarmingState.HerbPatchState.Index < 2)
+        {
+            return State.TRAVEL_FALADOR;
+        }
+        if (config.enableCatherby() && CatherbyFarmingState.HerbPatchState.Index >= 2 &&
+                CatherbyFarmingState.HerbPatchState != ProcessState.DONE)
+        {
+            return State.FALADOR;
+        }
+
         if (config.enableFalador() && FaladorFarmingState.HerbPatchState.Index < 2)
         {
-            return State.TRAVLE_FALADOR;
+            return State.TRAVEL_FALADOR;
         }
         if (config.enableFalador() && FaladorFarmingState.HerbPatchState.Index >= 2 &&
                 FaladorFarmingState.HerbPatchState != ProcessState.DONE)
@@ -520,9 +524,10 @@ public class BobTheFarmerPlugin extends Plugin {
         return succeeded.get();
     }
 
-    private void TravelArdougne()
+    private void TravelToArdougne(FarmingState state)
     {
         ArdougneFarmingState.HerbPatchState = ProcessState.TRAVEL;
+        SetDisplayState(state);
 
         if (ArdougneFarmingState.PathIndex == 0)
         {
@@ -546,15 +551,15 @@ public class BobTheFarmerPlugin extends Plugin {
         }
         if (ArdougneFarmingState.PathIndex == 2)
         {
-            if (!CastTeleportSpell(WidgetInfoExtended.SPELL_ARDOUGNE_TELEPORT))
-            {
-                Stop("Couldn't teleport to Ardougne");
-            }
-            else
+            if (CastTeleportSpell(WidgetInfoExtended.SPELL_ARDOUGNE_TELEPORT))
             {
                 ResetPath();
                 ArdougneFarmingState.PathIndex = 3;
                 setTimeout();
+            }
+            else
+            {
+                Stop("Couldn't teleport to Ardougne");
             }
             return;
         }
@@ -568,8 +573,11 @@ public class BobTheFarmerPlugin extends Plugin {
         }
     }
 
-    private void TravelToFalador()
+    private void TravelToFalador(FarmingState state)
     {
+        FaladorFarmingState.HerbPatchState = ProcessState.TRAVEL;
+        SetDisplayState(state);
+
         if (FaladorFarmingState.PathIndex == 0)
         {
             for (int i = 4; i >= 2; i--) {
@@ -592,15 +600,15 @@ public class BobTheFarmerPlugin extends Plugin {
         }
         if (FaladorFarmingState.PathIndex == 10)
         {
-            if (!CastTeleportSpell(WidgetInfoExtended.SPELL_FALADOR_TELEPORT))
-            {
-                Stop("Couldn't teleport to Falador");
-            }
-            else
+            if (CastTeleportSpell(WidgetInfoExtended.SPELL_FALADOR_TELEPORT))
             {
                 ResetPath();
                 FaladorFarmingState.PathIndex = 11;
                 setTimeout();
+            }
+            else
+            {
+                Stop("Couldn't teleport to Falador");
             }
             return;
         }
@@ -656,6 +664,40 @@ public class BobTheFarmerPlugin extends Plugin {
 
     }
 
+    private void TravelToCatherby(FarmingState state)
+    {
+        CatherbyFarmingState.HerbPatchState = ProcessState.TRAVEL;
+        SetDisplayState(state);
+
+        if (CatherbyFarmingState.PathIndex == 0)
+        {
+            if (CastTeleportSpell(WidgetInfoExtended.SPELL_CATHERBY_TELEPORT))
+            {
+                ResetPath();
+                CatherbyFarmingState.PathIndex = 1;
+                setTimeout();
+            }
+            else
+            {
+                Stop("Couldn't teleport to Catherby");
+            }
+        }
+        if (CatherbyFarmingState.PathIndex == 1)
+        {
+            if (TravelPath(CatherbyFarmingState.Paths.get("Camelot")))
+            {
+                CatherbyFarmingState.PathIndex = 2;
+                setTimeout();
+            }
+            return;
+        }
+        if (CatherbyFarmingState.PathIndex == 2)
+        {
+            CatherbyFarmingState.HerbPatchState = ProcessState.PROCESS_HERB_PATCH;
+            setTimeout();
+        }
+    }
+
     private int pathIndex = 0;
     private void ResetPath()
     {
@@ -693,17 +735,16 @@ public class BobTheFarmerPlugin extends Plugin {
             WidgetPackets.queueWidgetAction(teleportSpellIcon.get(), "Cast");
             return true;
         }
-
         return false;
     }
 
     private void SetDisplayState(FarmingState state)
     {
-        FarmingStateDisplay = state.HerbPatchState;
+        FarmingStateDisplay = state;
     }
 
     private void setTimeout() {
-        timeout = RandomUtils.nextInt(config.tickdelayMin(), config.tickDelayMax());
+        timeout = RandomUtils.nextInt(config.tickDelayMin(), config.tickDelayMax());
     }
 
     public void Stop(String reason)
@@ -711,7 +752,6 @@ public class BobTheFarmerPlugin extends Plugin {
         started = false;
         debug = reason;
         this.state = State.TIMEOUT;
-        breakHandler.stopPlugin(this);
         herbRun = false;
     }
 
@@ -758,10 +798,7 @@ public class BobTheFarmerPlugin extends Plugin {
         debug = "";
 
         if (!started) {
-            this.state = State.TIMEOUT;
-            breakHandler.stopPlugin(this);
-        } else {
-            breakHandler.startPlugin(this);
+            this.state = State.OFF;
         }
     }
 }

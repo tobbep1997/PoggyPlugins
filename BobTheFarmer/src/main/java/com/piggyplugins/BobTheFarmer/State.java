@@ -1,13 +1,15 @@
 package com.piggyplugins.BobTheFarmer;
 
 public enum State {
+    OFF,
     ANIMATING,
     TIMEOUT,
-    HANDLE_BREAK,
     RESTOCK,
-    TRAVLE_ARDOUGNE,
+    TRAVEL_ARDOUGNE,
     ARDOUGNE,
-    TRAVLE_FALADOR,
-    FALADOR
+    TRAVEL_FALADOR,
+    FALADOR,
+    TRAVEL_CATHERBY,
+    CATHERBY
 }
 

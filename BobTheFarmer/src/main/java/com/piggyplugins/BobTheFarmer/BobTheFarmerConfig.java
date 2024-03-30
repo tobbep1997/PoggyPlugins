@@ -215,7 +215,7 @@ public interface BobTheFarmerConfig extends Config {
             position = 0,
             section = tickDelaySection
     )
-    default int tickdelayMin() {
+    default int tickDelayMin() {
         return 0;
     }
 
