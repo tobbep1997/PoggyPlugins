@@ -360,7 +360,8 @@ public class BobTheFarmerPlugin extends Plugin {
                 state.HerbPatchState = ProcessState.DONE;
                 break;
         }
-        setTimeout();
+        if (state.HerbPatchState != ProcessState.PROCESS_HERB_PATCH)
+            setTimeout();
     }
 
     private void Restock()
@@ -580,7 +581,6 @@ public class BobTheFarmerPlugin extends Plugin {
             if (TravelPath(ArdougneFarmingState.Paths.get("Teleport")))
             {
                 ArdougneFarmingState.HerbPatchState = ProcessState.PROCESS_HERB_PATCH;
-                setTimeout();
             }
         }
     }
@@ -706,7 +706,6 @@ public class BobTheFarmerPlugin extends Plugin {
         if (CatherbyFarmingState.PathIndex == 2)
         {
             CatherbyFarmingState.HerbPatchState = ProcessState.PROCESS_HERB_PATCH;
-            setTimeout();
         }
     }
 
