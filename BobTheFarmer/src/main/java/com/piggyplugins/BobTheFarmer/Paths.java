@@ -2,6 +2,7 @@ package com.piggyplugins.BobTheFarmer;
 
 import net.runelite.api.coords.WorldPoint;
 
+//All the saved paths for the bot
 public class Paths {
     //HERB
     public static WorldPoint[] ArdougneHerbTeleportPath1 = {

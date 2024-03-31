@@ -1,5 +1,6 @@
 package com.piggyplugins.BobTheFarmer;
 
+//Types of trees that are supported by the bot
 public enum Tree {
     Oak("Oak sapling", "Oak tree", "Tomatoes(5)", 1),
     Willow("Willow sapling", "Willow tree","Apples(5)", 1),

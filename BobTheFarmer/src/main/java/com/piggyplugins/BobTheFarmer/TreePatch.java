@@ -5,6 +5,8 @@ import net.runelite.api.coords.WorldPoint;
 import java.util.Dictionary;
 import java.util.Hashtable;
 
+//Tree patch data structure
+//This is to allow the bot the know where it is by knowing where it isn't
 public class TreePatch {
     public String Name = "";
     public String Gardener = "";

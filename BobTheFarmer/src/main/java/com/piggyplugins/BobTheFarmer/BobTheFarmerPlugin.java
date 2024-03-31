@@ -108,6 +108,7 @@ public class BobTheFarmerPlugin extends Plugin {
     private void onChatMessage(ChatMessage message) {
         if (message.getType() == ChatMessageType.GAMEMESSAGE)
         {
+            //Handle failed teleports
             if (message.getMessage().contains("Try again tomorrow when the cape"))
             {
                 ArdougneHerbPatch.PathIndex = 2;
@@ -129,16 +130,20 @@ public class BobTheFarmerPlugin extends Plugin {
             return;
         }
 
+        //Reset herb run data if not on a herb run
         if (!herbRun)
             ResetHerbPatchStates();
 
+        //Reset tree run data if not on a tree run
         if (!treeRun)
             ResetTreePatchStates();
 
+        //Get the next step
         state = getNextState();
         handleState();
     }
 
+    //Resets all herb run data to its default state
     private void ResetHerbPatchStates() {
         ArdougneHerbPatch = new HerbPatch("Ardougne", new String[] {});
         ArdougneHerbPatch.SetPath(Paths.ArdougneHerbTeleportPath1, "Teleport");
@@ -164,6 +169,7 @@ public class BobTheFarmerPlugin extends Plugin {
 
         WeissHerbPatch = new HerbPatch("Weiss", new String[] {});
     }
+    //Resets all tree run data to its default state
     private void ResetTreePatchStates() {
         FaladorTreePatch = new TreePatch("Falador", "Heskel", new String[] {});
         FaladorTreePatch.SetPath(Paths.FaladorTreeTeleportPath, "Teleport");
@@ -179,6 +185,8 @@ public class BobTheFarmerPlugin extends Plugin {
     }
 
     //------------------------------------- State machine -------------------------------------
+    //This is the overall state machine for the plugin patches are handeld seperatly
+    //This state machine does banking and traveling
     private void handleState() {
         if (state == null)
             return;
@@ -231,6 +239,7 @@ public class BobTheFarmerPlugin extends Plugin {
                 break;
         }
     }
+    //Get the next step for the main state machine
     private State getNextState() {
         if (EthanApiPlugin.isMoving() || client.getLocalPlayer().getAnimation() != -1) {
             return State.ANIMATING;
@@ -241,6 +250,7 @@ public class BobTheFarmerPlugin extends Plugin {
         if (!herbRun && !treeRun)
             return State.OFF;
 
+        //Handle herb runs
         if (herbRun)
         {
             if (herbBankState != BankState.DONE && !config.debugDisableRestock())
@@ -266,6 +276,7 @@ public class BobTheFarmerPlugin extends Plugin {
             herbRun = false;
         }
 
+        //Handle tree runs
         if (treeRun)
         {
             if (treeBankState != BankState.DONE && !config.debugDisableRestock())
@@ -288,6 +299,7 @@ public class BobTheFarmerPlugin extends Plugin {
     }
 
     //------------------------------------- Herbs -------------------------------------
+    //Get the next herb step for the herb state machine
     private HerbPatchState FarmHerbsState(HerbPatch currentState) {
         //Check if there is any weeds in the inventory and drop them if there is
         if (Inventory.search().withName("Weeds").first().isPresent())
@@ -306,7 +318,7 @@ public class BobTheFarmerPlugin extends Plugin {
         if (TileObjects.search().withName("Dead herbs").withAction("Clear").first().isPresent())
             return HerbPatchState.CLEAR;
 
-        //Rake
+        //Rake herb patch
         if (TileObjects.search().nameContains("Herb patch").withAction("Rake").first().isPresent()){
             return HerbPatchState.RAKE;
         }
@@ -319,27 +331,35 @@ public class BobTheFarmerPlugin extends Plugin {
 
         //Use compost on the herbs
         if (TileObjects.search().nameContains("Herbs").withAction("Inspect").first().isPresent()) {
-            if (Inventory.search().withName(config.compost()).first().isPresent())
+            if (Inventory.search().withName(config.compost().Name).first().isPresent())
                 return HerbPatchState.COMPOST;
         }
 
+        //PROCESS_HERB_PATCH is doesen't do anything, it just indicates to the herb state machine that it should start
         return HerbPatchState.PROCESS_HERB_PATCH;
     }
+    //Execute herb state machine
     private void FarmHerbs(HerbPatch herbPatch) {
         if (herbPatch.State.Index < 2 || herbPatch.State == HerbPatchState.DONE)
             return;
 
+        //Get the next state
         herbPatch.State = FarmHerbsState(herbPatch);
+
+        //Set the display variable so the user can see whats going on
         SetDisplayStateHerb(herbPatch);
 
+        //Herb state machine
         switch (herbPatch.State)
         {
-            case HARVEST: //Harvest herbs if there is any
+            //Harvest herbs if there is any
+            case HARVEST:
                 TileObjects.search().withName("Herbs").withAction("Pick").first().ifPresent(herb -> {
                     MousePackets.queueClickPacket();
                     TileObjectInteraction.interact(herb, "Pick");
                 });
                 break;
+            //Clear out dead herbs
             case CLEAR:
                 //Plant new herbs
                 TileObjects.search().nameContains("Dead herbs").withAction("Clear").first().ifPresent(tileObject -> {
@@ -347,42 +367,45 @@ public class BobTheFarmerPlugin extends Plugin {
                     TileObjectInteraction.interact(tileObject, "Clear");
                 });
                 break;
+            //Rake the herb patch
             case RAKE:
-                //Plant new herbs
                 TileObjects.search().nameContains("Herb patch").withAction("Rake").first().ifPresent(tileObject -> {
                     MousePackets.queueClickPacket();
                     TileObjectInteraction.interact(tileObject, "Rake");
                 });
                 break;
+            //Plant herbs on herb patch
             case PLANTING:
                 TileObjects.search().nameContains("Herb patch").withAction("Inspect").first().ifPresent(tileObject -> {
                     Inventory.search().withName(config.herb().SeedName).first().ifPresent(item -> {
-                        //Use seed on herb patch
                         MousePackets.queueClickPacket();
                         MousePackets.queueClickPacket();
                         ObjectPackets.queueWidgetOnTileObject(item, tileObject);
                     });
                 });
                 break;
+            //Use compost on the herbs
             case COMPOST:
-                //Use compost on the herbs
                 TileObjects.search().nameContains("Herbs").withAction("Inspect").first().ifPresent(tileObject -> {
                     herbPatch.State = HerbPatchState.COMPOST;
-                    Inventory.search().withName(config.compost()).first().ifPresent(item -> {
-                        //Use compost on herb patch
+                    Inventory.search().withName(config.compost().Name).first().ifPresent(item -> {
                         MousePackets.queueClickPacket();
                         MousePackets.queueClickPacket();
                         ObjectPackets.queueWidgetOnTileObject(item, tileObject);
+
+                        //Set the state to note so it notes any herbs in the inventory
                         herbPatch.State = HerbPatchState.NOTE;
                     });
                 });
                 break;
-            case EMPTY_INVENTORY: //Check if there is any weeds in the inventory and drop them if there is
+            //Check if there is any weeds in the inventory and drop them if there is
+            case EMPTY_INVENTORY:
                 Inventory.search().withName("Weeds").first().ifPresent(weeds -> {
                     MousePackets.queueClickPacket();
                     InventoryInteraction.useItem(weeds, "Drop");
                 });
                 break;
+            //Note herbs on Tool Leprechaun
             case NOTE:
                 Inventory.search().nameContains("Grimy").withAction("Clean").onlyUnnoted().first().ifPresent(herbs -> {
                     NPCs.search().nameContains("Tool").nearestToPlayer().ifPresent(leprechaun -> {
@@ -390,68 +413,81 @@ public class BobTheFarmerPlugin extends Plugin {
                         NPCPackets.queueWidgetOnNPC(leprechaun, herbs);
                     });
                 });
+                //After noting set the patch to done
                 herbPatch.State = HerbPatchState.DONE;
                 break;
         }
+        //Set the random timeout when nessecery
         if (herbPatch.State != HerbPatchState.PROCESS_HERB_PATCH && herbPatch.State != HerbPatchState.EMPTY_INVENTORY)
             setTimeout();
     }
 
     //------------------------------------- Trees -------------------------------------
+    //Get the next tree step for the herb state machine
     private TreePatchState FarmTreeState(TreePatch currentState){
         if (Inventory.search().withName("Weeds").first().isPresent())
             return TreePatchState.EMPTY_INVENTORY;
 
-        //Check health
+        //Check health of tree
         if (TileObjects.search().withName(config.tree().Tree).withAction("Check-health").nearestToPlayer().isPresent())
         {
             return TreePatchState.CHECK_HEALTH;
         }
-        //Pay
+        //Pay gardener
         if (TileObjects.search().withName(config.tree().Tree).withAction("Chop down").nearestToPlayer().isPresent())
         {
             return TreePatchState.PAY;
         }
-        //Rake
+        //Rake patch
         if (TileObjects.search().nameContains("Tree patch").withAction("Rake").nearestToPlayer().isPresent()){
             return TreePatchState.RAKE;
         }
+        //Plant sapling
         if (TileObjects.search().nameContains("Tree patch").withAction("Inspect").nearestToPlayer().isPresent())
             if (Inventory.search().withName(config.tree().Sapling).first().isPresent())
                 return TreePatchState.PlANT;
-
+        //Pay to protect
         if (TileObjects.search().withName(config.tree().Tree).withAction("Inspect").nearestToPlayer().isPresent())
             return TreePatchState.PROTECT;
 
-
+        //PROCESS_TREE_PATCH is doesen't do anything, it just indicates to the herb state machine that it should start
         return TreePatchState.PROCESS_TREE_PATCH;
     }
     private void FarmTrees(TreePatch treePatch) {
         if (treePatch.State.Index < 2 || treePatch.State == TreePatchState.DONE)
             return;
 
+        //Get the next state
         treePatch.State = FarmTreeState(treePatch);
+
+        //Set the display variable so the user can see whats going on
         SetDisplayStateTree(treePatch);
+
+        //Tree state machine
         switch (treePatch.State)
         {
+            //Empty the inventory of any weeds
             case EMPTY_INVENTORY: //Check if there is any weeds in the inventory and drop them if there is
                 Inventory.search().nameContains("Weeds").first().ifPresent(weeds -> {
                     MousePackets.queueClickPacket();
                     InventoryInteraction.useItem(weeds, "Drop");
                 });
                 break;
+            //Rake the tree patch
             case RAKE:
                 TileObjects.search().nameContains("Tree patch").withAction("Rake").first().ifPresent(tileObject -> {
                     MousePackets.queueClickPacket();
                     TileObjectInteraction.interact(tileObject, "Rake");
                 });
                 break;
+            //Check the health of the tree
             case CHECK_HEALTH:
                 TileObjects.search().withAction("Check-health").nearestToPlayer().ifPresent(tree -> {
                     MousePackets.queueClickPacket();
                     TileObjectInteraction.interact(tree, "Check-health");
                 });
                 break;
+            //Pay to get the tree removed
             case PAY:
                 NPCs.search().withAction("Pay").nearestToPlayer().ifPresent(npc -> {
                     Widgets.search().withTextContains("tree chopped down").hiddenState(false).first().ifPresentOrElse(payWidget -> {
@@ -463,6 +499,7 @@ public class BobTheFarmerPlugin extends Plugin {
                     });
                 });
                 break;
+            //Plant a new sapling
             case PlANT:
                 TileObjects.search().nameContains("Tree patch").withAction("Inspect").nearestToPlayer().ifPresent(patch -> {
                     Inventory.search().nameContains(config.tree().Sapling).first().ifPresent(item -> {
@@ -472,6 +509,7 @@ public class BobTheFarmerPlugin extends Plugin {
                     });
                 });
                 break;
+            //Pay to have the tree protected
             case PROTECT:
                 NPCs.search().withAction("Pay").nearestToPlayer().ifPresent(npc -> {
                     Widgets.search().withTextContains("Pay one").hiddenState(false).first().ifPresentOrElse(payWidget -> {
@@ -488,11 +526,14 @@ public class BobTheFarmerPlugin extends Plugin {
                 });
                 break;
         }
+
+        //Set the random timeout when nessecery
         if (treePatch.State != TreePatchState.PROCESS_TREE_PATCH && treePatch.State != TreePatchState.EMPTY_INVENTORY)
             setTimeout();
     }
 
     //------------------------------------- Bank -------------------------------------
+    //Checks if an item is in the keepItems list
     private boolean CompareItem(List<String> keepItems, String compItem) {
         for (String item : keepItems)
         {
@@ -501,13 +542,19 @@ public class BobTheFarmerPlugin extends Plugin {
         }
         return false;
     }
+
+    //Restocks on anything that is needed for the herb run
     private void RestockHerb() {
+
+        //Check if bank is open
         if (Bank.isOpen()) {
+            //Add all items that are needed to the keepItems List
             ArrayList<String> keepItems = new ArrayList<String>(Arrays.asList(HerbTools));
             keepItems.addAll(Arrays.asList(config.additionalItems().split(",")));
             keepItems.add(config.herb().SeedName);
-            keepItems.add(config.compost());
+            keepItems.add(config.compost().Name);
 
+            //Depending on what patch is selected differente tools and teleports might be needed
             if (config.enableArdougne())
                 keepItems.addAll(Arrays.asList(ArdougneHerbPatch.Tools));
             if (config.enableCatherby())
@@ -529,6 +576,7 @@ public class BobTheFarmerPlugin extends Plugin {
             if (config.enableWeiss())
                 keepItems.addAll(Arrays.asList(WeissHerbPatch.Tools));
 
+            //Count how many seeds and compost are needed
             int patches = 0;
             patches += config.enableArdougne() ? 1 : 0;
             patches += config.enableCatherby() ? 1 : 0;
@@ -541,16 +589,18 @@ public class BobTheFarmerPlugin extends Plugin {
             patches += config.enableTrollStronghold() ? 1 : 0;
             patches += config.enableWeiss() ? 1 : 0;
 
+            //Banking state machine
             switch (herbBankState)
             {
+                //Deposit items that are not needed
                 case DEPOSIT:
-                    //Deposit items that are not needed
                     List<Widget> bankInv = BankInventory.search().filter(widget -> !CompareItem(keepItems, widget.getName())).result();
                     for (Widget item : bankInv) {
                         MousePackets.queueClickPacket();
                         BankInventoryInteraction.useItem(item, "Deposit-All");
                     }
                     break;
+                //Withdraw the requierd items in non noted form
                 case WITHDRAW:
                     if (!getWithdrawNotes())
                     {
@@ -569,7 +619,7 @@ public class BobTheFarmerPlugin extends Plugin {
                         }
 
                         //Take out compost
-                        if (!TakeOutItemFromBank(config.compost(), patches)) {
+                        if (!TakeOutItemFromBank(config.compost().Name, patches)) {
                             Stop("Missing " + config.compost() + " in bank");
                             return;
                         }
@@ -636,6 +686,7 @@ public class BobTheFarmerPlugin extends Plugin {
                         setWithdrawNotes(false);
                     }
                     break;
+                //Withdraw items that are needed in noted form
                 case WITHDRAW_NOTED:
                     if (getWithdrawNotes())
                     {
@@ -646,6 +697,7 @@ public class BobTheFarmerPlugin extends Plugin {
                         setWithdrawNotes(true);
                     }
                     break;
+                //Double check that we have all requierd items
                 case CHECK:
                     boolean hasAllItems = true;
                     for (String item : keepItems)
@@ -656,7 +708,7 @@ public class BobTheFarmerPlugin extends Plugin {
                             break;
                         }
                     }
-                    //Make sure we have all items and mark it as clear
+                    //Set the banking state to done
                     herbBankState = hasAllItems ? BankState.DONE : BankState.DEPOSIT;
                     break;
             }
@@ -666,23 +718,31 @@ public class BobTheFarmerPlugin extends Plugin {
             OpenBank();
         }
     }
+
+    //Restocks on anything that is needed for the herb run
     private void RestockTree() {
+
+        //Check if bank is open
         if (Bank.isOpen()) {
+            //Add all items that are needed to the keepItems List
             ArrayList<String> keepItems = new ArrayList<String>(Arrays.asList(TreeTools));
             keepItems.addAll(Arrays.asList(config.additionalItems().split(",")));
             keepItems.add(config.tree().Sapling);
             keepItems.add(config.tree().ProtectionItem);
             keepItems.add("Coins");
 
+            //Depending on what patch is selected differente tools and teleports might be needed
             if (config.enableTreeFalador())
                 keepItems.addAll(Arrays.asList(FaladorTreePatch.Tools));
             if (config.enableTreeLumbridge())
                 keepItems.addAll(Arrays.asList(LumbridgeTreePatch.Tools));
 
+            //Count how many saplings are needed
             int patches = 0;
             patches += config.enableTreeFalador() ? 1 : 0;
             patches += config.enableTreeLumbridge() ? 1 : 0;
 
+            //Banking state machine
             switch (treeBankState){
                 //Deposit items that are not needed
                 case DEPOSIT:
@@ -750,7 +810,7 @@ public class BobTheFarmerPlugin extends Plugin {
                     {
                         if (getWithdrawNotes())
                         {
-                            //Take out seeds
+                            //Take protection items
                             if (!TakeOutItemFromBank(config.tree().ProtectionItem, patches)) {
                                 Stop("Missing " + config.tree().ProtectionItem + " in bank");
                                 return;
@@ -784,6 +844,8 @@ public class BobTheFarmerPlugin extends Plugin {
             OpenBank();
         }
     }
+
+    //Opens the closes bank
     private void OpenBank() {
         Optional<TileObject> bankBooth = TileObjects.search().filter(tileObject -> {
             ObjectComposition objectComposition = TileObjectQuery.getObjectComposition(tileObject);
@@ -801,6 +863,8 @@ public class BobTheFarmerPlugin extends Plugin {
             TileObjectInteraction.interact(tileObject, "Use");
         });
     }
+
+    //Set the bank to withdraw in either noted or unnoted form
     private boolean setWithdrawNotes(boolean noted) {
         if (!Bank.isOpen()) return false;
         if (Bank.isOpen()) {
@@ -819,9 +883,14 @@ public class BobTheFarmerPlugin extends Plugin {
         }
         return false;
     }
+
+    //Returns if the bank is currently set to noted or unnoted
     private boolean getWithdrawNotes() {
         return client.getVarbitValue(3958) == 1;
     }
+
+    //Take out a set amount of items from the bank
+    //This double checks if you have any items in the invetory already so it dosen't withdraw too much
     private boolean TakeOutItemFromBank(String item, int amount) {
         AtomicBoolean succeeded = new AtomicBoolean(false);
         BankUtil.nameContainsNoCase(item).first().ifPresentOrElse(widget ->
@@ -851,9 +920,12 @@ public class BobTheFarmerPlugin extends Plugin {
 
     //------------------------------------- Travel -------------------------------------
         //------------------------------------- Herbs -------------------------------------
+
+    //Travels to the Ardougne herb patch
     private void TravelToArdougneHerbPatch(HerbPatch state) {
         ArdougneHerbPatch.State = HerbPatchState.TRAVEL;
         SetDisplayStateHerb(state);
+
 
         if (ArdougneHerbPatch.PathIndex == 0)
         {
@@ -897,6 +969,8 @@ public class BobTheFarmerPlugin extends Plugin {
             }
         }
     }
+
+    //Travels to the Falador herb patch
     private void TravelToFaladorHerbPatch(HerbPatch state) {
         FaladorHerbPatch.State = HerbPatchState.TRAVEL;
         SetDisplayStateHerb(state);
@@ -986,6 +1060,8 @@ public class BobTheFarmerPlugin extends Plugin {
         }
 
     }
+
+    //Travels to the Catherby herb patch
     private void TravelToCatherbyHerbPatch(HerbPatch state) {
         CatherbyHerbPatch.State = HerbPatchState.TRAVEL;
         SetDisplayStateHerb(state);
@@ -1020,6 +1096,8 @@ public class BobTheFarmerPlugin extends Plugin {
     }
 
         //------------------------------------- Trees -------------------------------------
+
+    //Travels to the Falador tree patch
     private void TravelToFaladorTreePatch(TreePatch state) {
             FaladorTreePatch.State = TreePatchState.TRAVEL;
             SetDisplayStateTree(state);
@@ -1052,6 +1130,8 @@ public class BobTheFarmerPlugin extends Plugin {
                 FaladorTreePatch.State = TreePatchState.PROCESS_TREE_PATCH;
             }
         }
+
+    //Travels to the Lumbridge tree patch
     private void TravelToLumbridgeTreePatch(TreePatch state) {
             LumbridgeTreePatch.State = TreePatchState.TRAVEL;
             SetDisplayStateTree(state);
@@ -1087,9 +1167,13 @@ public class BobTheFarmerPlugin extends Plugin {
 
     //------------------------------------- Travel functions -------------------------------------
     private int pathIndex = 0;
+
+    //Reset the pathIndex
     private void ResetPath() {
         pathIndex = 0;
     }
+
+    //Iterates through a WorldPoint array and moves the player to next point
     private boolean TravelPath(WorldPoint[] path) {
         if (EthanApiPlugin.isMoving())
             return false;
@@ -1107,9 +1191,13 @@ public class BobTheFarmerPlugin extends Plugin {
             return true;
         return false;
     }
+
+    //Check is the player is on the targetTile
     private boolean playerAtTarget(WorldPoint targetTile) {
         return client.getLocalPlayer().getWorldLocation().getX() == targetTile.getX() && client.getLocalPlayer().getWorldLocation().getY() == targetTile.getY();
     }
+
+    //Casts a spell and returns true if the spell has been casted
     private boolean CastTeleportSpell(WidgetInfoExtended spell) {
         Optional<Widget> teleportSpellIcon = Widgets.search().withId(spell.getPackedId()).first();
         if (teleportSpellIcon.isPresent()) {
@@ -1121,20 +1209,31 @@ public class BobTheFarmerPlugin extends Plugin {
     }
 
     //------------------------------------- General functions -------------------------------------
+
+    //Set the herb display for the user
     private void SetDisplayStateHerb(HerbPatch state) {
         HerbPatchStateDisplay = state;
     }
+
+    //Set the tree display for the user
     private void SetDisplayStateTree(TreePatch state) {
         TreePatchStateDisplay = state;
     }
+
+    //Sets a random timeout
+    //This intrduces random delays to the bot
     private void setTimeout() {
         timeout = RandomUtils.nextInt(config.tickDelayMin(), config.tickDelayMax());
     }
+
+    //Stop is called when something is wrong and the bot can not continue
+    //An error message is shown to the user
     public void Stop(String reason) {
         started = false;
         debug = reason;
         this.state = State.TIMEOUT;
         herbRun = false;
+        treeRun = false;
     }
 
     //------------------------------------- Hotkey listeners -------------------------------------

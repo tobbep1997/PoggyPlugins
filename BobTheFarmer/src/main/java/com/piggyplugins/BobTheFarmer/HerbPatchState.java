@@ -1,5 +1,6 @@
 package com.piggyplugins.BobTheFarmer;
 
+//Possible herb patch states
 public enum HerbPatchState
 {
     NOT_STARTED(0),

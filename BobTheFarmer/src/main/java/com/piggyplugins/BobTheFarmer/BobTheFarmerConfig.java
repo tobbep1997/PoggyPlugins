@@ -36,6 +36,7 @@ public interface BobTheFarmerConfig extends Config {
     )
     String generalConfiguration = "General configuration";
 
+    //------------------------------------- Keybinds -------------------------------------
     @ConfigItem(
             keyName = "toggle",
             name = "Toggle",
@@ -73,8 +74,7 @@ public interface BobTheFarmerConfig extends Config {
         return Keybind.NOT_SET;
     }
 
-
-
+    //------------------------------------- General configuration -------------------------------------
     @ConfigItem(
             keyName = "additionalItems",
             name = "Additional items",
@@ -85,7 +85,6 @@ public interface BobTheFarmerConfig extends Config {
     default String additionalItems() {
         return "Rune pouch";
     }
-
     @ConfigItem(
             keyName = "debugDisableRestock",
             name = "debugDisableRestock",
@@ -96,6 +95,7 @@ public interface BobTheFarmerConfig extends Config {
         return false;
     }
 
+    //------------------------------------- Tree run configuration -------------------------------------
     @ConfigItem(
             keyName = "tree",
             name = "Tree",
@@ -154,7 +154,7 @@ public interface BobTheFarmerConfig extends Config {
     )
     default boolean enableTreeVarrock() { return false; }
 
-
+    //------------------------------------- Herb run configuration -------------------------------------
     @ConfigItem(
             keyName = "herb",
             name = "Herb",
@@ -166,7 +166,6 @@ public interface BobTheFarmerConfig extends Config {
     default Herb herb() {
         return Herb.Guam_leaf;
     }
-
     @ConfigItem(
             keyName = "compost",
             name = "Compost",
@@ -174,10 +173,9 @@ public interface BobTheFarmerConfig extends Config {
             position = -1,
             section = herbPatches
     )
-    default String compost() {
-        return "Ultracompost";
+    default Compost_Type compost() {
+        return Compost_Type.Ultracompost;
     }
-
     @ConfigItem(
             name = "Ardougne herb patch",
             keyName = "enableArdougne",
@@ -258,8 +256,6 @@ public interface BobTheFarmerConfig extends Config {
     default boolean enablePortPhasmatys() {
         return false;
     }
-
-
     @ConfigItem(
             name = "Troll Stronghold herb patch",
             keyName = "enableTrollStronghold",
@@ -270,7 +266,6 @@ public interface BobTheFarmerConfig extends Config {
     default boolean enableTrollStronghold() {
         return false;
     }
-
     @ConfigItem(
             name = "Weiss herb patch",
             keyName = "enableWeiss",
@@ -282,6 +277,7 @@ public interface BobTheFarmerConfig extends Config {
         return false;
     }
 
+    //------------------------------------- Tick delay configuration -------------------------------------
     @ConfigItem(
             name = "Tick Delay Min",
             keyName = "tickDelayMin",
@@ -292,7 +288,6 @@ public interface BobTheFarmerConfig extends Config {
     default int tickDelayMin() {
         return 0;
     }
-
     @ConfigItem(
             name = "Tick Delay Max",
             keyName = "tickDelayMax",

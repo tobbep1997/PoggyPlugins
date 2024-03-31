@@ -1,5 +1,6 @@
 package com.piggyplugins.BobTheFarmer;
 
+//Main state machine states
 public enum State {
     OFF,
     ANIMATING,

@@ -1,5 +1,6 @@
 package com.piggyplugins.BobTheFarmer;
 
+//Types of herbs that are supported by the bot
 public enum Herb {
     Guam_leaf("Guam seed"),
     Marrentill("Marrentill seed"),

@@ -1,5 +1,6 @@
 package com.piggyplugins.BobTheFarmer;
 
+//Possible tree patch states
 public enum TreePatchState {
     NOT_STARTED(0),
     TRAVEL(1),
