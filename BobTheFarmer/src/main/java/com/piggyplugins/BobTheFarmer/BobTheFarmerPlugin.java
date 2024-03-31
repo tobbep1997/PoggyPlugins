@@ -753,6 +753,16 @@ public class BobTheFarmerPlugin extends Plugin {
                                 }
                             }
                         }
+                        if (config.enablePortPhasmatys())
+                        {
+                            for (String tool : PortPhasmatysHerbPatch.Tools)
+                            {
+                                if (!TakeOutItemFromBank(tool, 1)) {
+                                    Stop("Missing " + tool + " in bank");
+                                    return;
+                                }
+                            }
+                        }
                         herbBankState = BankState.CHECK;
                     }
                     else
