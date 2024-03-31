@@ -39,9 +39,15 @@ public class BobTheFarmerOverlay extends OverlayPanel {
                 .rightColor(Color.WHITE)
                 .build());
         panelComponent.getChildren().add(LineComponent.builder()
-                .left(plugin.state==null || plugin.HerbPatchStateDisplay ==null || !plugin.started ? "" : plugin.HerbPatchStateDisplay.Name)
+                .left(plugin.state==null || plugin.HerbPatchStateDisplay == null || !plugin.started ? "" : plugin.HerbPatchStateDisplay.Name)
                 .leftColor(new Color(255, 157, 249))
-                .right(plugin.state==null || plugin.HerbPatchStateDisplay ==null || !plugin.started ? "" : plugin.HerbPatchStateDisplay.State.name())
+                .right(plugin.state==null || plugin.HerbPatchStateDisplay == null || !plugin.started ? "" : plugin.HerbPatchStateDisplay.State.name())
+                .rightColor(Color.WHITE)
+                .build());
+        panelComponent.getChildren().add(LineComponent.builder()
+                .left(plugin.state==null || plugin.TreePatchStateDisplay == null || !plugin.started ? "" : plugin.TreePatchStateDisplay.Name)
+                .leftColor(new Color(255, 157, 249))
+                .right(plugin.state==null || plugin.TreePatchStateDisplay == null || !plugin.started ? "" : plugin.TreePatchStateDisplay.State.name())
                 .rightColor(Color.WHITE)
                 .build());
         panelComponent.getChildren().add(LineComponent.builder()
@@ -56,9 +62,6 @@ public class BobTheFarmerOverlay extends OverlayPanel {
                 .right(plugin.debugPoint.toString())
                 .rightColor(Color.WHITE)
                 .build());
-
-
-
 
         return super.render(graphics);
     }

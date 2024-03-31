@@ -17,6 +17,8 @@ public enum State {
     //Tree runs
     RESTOCK_TREE,
     TREE_TRAVEL_FALADOR,
-    TREE_FALADOR
+    TREE_FALADOR,
+    TREE_TRAVEL_LUMBRIDGE,
+    TREE_LUMBRIDGE
 }
 

@@ -1,18 +1,20 @@
 package com.piggyplugins.BobTheFarmer;
 
 public enum Tree {
-    Oak("Oak sapling", "Tomatoes(5)", 1),
-    Willow("Willow sapling","Apples(5)", 1),
-    Maple("Maple sapling","Oranges(5)", 1),
-    Yew("Yew sapling","Cactus spine", 10),
-    Magic("Magic sapling","Coconut", 25);
+    Oak("Oak sapling", "Oak tree", "Tomatoes(5)", 1),
+    Willow("Willow sapling", "Willow tree","Apples(5)", 1),
+    Maple("Maple sapling", "Maple tree","Oranges(5)", 1),
+    Yew("Yew sapling", "Yew tree","Cactus spine", 10),
+    Magic("Magic sapling", "Magic tree","Coconut", 25);
 
-    public final String Seed;
+    public final String Sapling;
+    public final String Tree;
     public final String ProtectionItem;
     public final int AmountOfProtectionItem;
-    Tree(String seed, String protectionItem, int amountOfProtectionItem)
+    Tree(String sapling, String tree, String protectionItem, int amountOfProtectionItem)
     {
-        this.Seed = seed;
+        this.Sapling = sapling;
+        this.Tree = tree;
         this.ProtectionItem = protectionItem;
         this.AmountOfProtectionItem = amountOfProtectionItem;
     }

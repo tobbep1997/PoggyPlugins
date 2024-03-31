@@ -30,4 +30,7 @@ public class Paths {
     public static WorldPoint[] FaladorTreeTeleportPath = {
             new WorldPoint(3002,3374,0)
     };
+    public static WorldPoint[] LumbridgeTreeTeleportPath = {
+            new WorldPoint(3195,3230,0)
+    };
 }

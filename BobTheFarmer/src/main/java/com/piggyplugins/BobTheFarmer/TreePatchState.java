@@ -5,7 +5,8 @@ public enum TreePatchState {
     TRAVEL(1),
     PROCESS_TREE_PATCH(2),
     CHECK_HEALTH(3),
-    CLEAR(4),
+    PAY(4),
+
     RAKE(5),
     PlANT(6),
     PROTECT(7),
