@@ -28,25 +28,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 
-class FarmingState
-{
-    public String Name = "";
-    public String[] Tools = {};
-    public ProcessState HerbPatchState = ProcessState.NOT_STARTED;
-    public Dictionary<String, WorldPoint[]> Paths = new Hashtable<>();
-    public int PathIndex = 0;
 
-    public FarmingState(String name,String[] tools)
-    {
-        this.Name = name;
-        this.Tools = tools;
-        this.PathIndex = 0;
-    }
-    public void SetPath(WorldPoint[] path, String key)
-    {
-        Paths.put(key, path);
-    }
-}
 
 @PluginDescriptor(
         name = "<html><font color=\"#FF9DF9\">[PP]</font> Bob The Farmer</html>",
@@ -71,20 +53,26 @@ public class BobTheFarmerPlugin extends Plugin {
     boolean treeRun;
     private int timeout;
     public String debug = "";
-    private boolean hasStocked = false;
+    private boolean hasStockedHerb = false;
+    private boolean hasStockedTree = false;
     private final String[] Tools =  {"Magic secateurs", "Spade", "Rake", "Seed dibber" };
-    FarmingState FarmingStateDisplay = null;
-    private FarmingState ArdougneFarmingState = null;
-    private FarmingState CatherbyFarmingState = null;
-    private FarmingState CivitasIllaFortisFarmingState = null;
-    private FarmingState FaladorFarmingState = null;
-    private FarmingState FarmingGuildFarmingState = null;
-    private FarmingState HarmonyIslandFarmingState = null;
-    private FarmingState HosidiusFarmingState = null;
-    private FarmingState PortPhasmatysFarmingState = null;
-    private FarmingState TrollStrongholdFarmingState = null;
-    private FarmingState WeissFarmingState = null;
 
+    //Herb patches
+    HerbPatch HerbPatchStateDisplay = null;
+    private HerbPatch ArdougneHerbPatch = null;
+    private HerbPatch CatherbyHerbPatch = null;
+    private HerbPatch CivitasIllaFortisHerbPatch = null;
+    private HerbPatch FaladorHerbPatch = null;
+    private HerbPatch FarmingGuildHerbPatch = null;
+    private HerbPatch HarmonyIslandHerbPatch = null;
+    private HerbPatch HosidiusHerbPatch = null;
+    private HerbPatch PortPhasmatysHerbPatch = null;
+    private HerbPatch TrollStrongholdHerbPatch = null;
+    private HerbPatch WeissHerbPatch = null;
+
+    //Tree patches
+    TreePatch TreePatchStateDisplay = null;
+    private TreePatch FaladorTreePatch = null;
 
 
 
@@ -118,53 +106,65 @@ public class BobTheFarmerPlugin extends Plugin {
         {
             if (message.getMessage().contains("Try again tomorrow when the cape"))
             {
-                ArdougneFarmingState.PathIndex = 2;
+                ArdougneHerbPatch.PathIndex = 2;
             }
             if (message.getMessage().contains("Try again tomorrow whilst the ring"))
             {
-                FaladorFarmingState.PathIndex = 10;
+                FaladorHerbPatch.PathIndex = 10;
             }
         }
     }
     @Subscribe
     private void onGameTick(GameTick event) {
-        if (!EthanApiPlugin.loggedIn() || (!started || !(herbRun || treeRun))) {
+        if (!EthanApiPlugin.loggedIn() || !started) {
             // We do an early return if the user isn't logged in
-            hasStocked = false;
+            hasStockedHerb = false;
             herbRun = false;
-            ResetFarmingStates();
+            treeRun = false;
             return;
         }
+
+        if (!herbRun)
+            ResetHerbPatchStates();
+
+        if (!treeRun)
+            ResetTreePatchStates();
 
         state = getNextState();
         handleState();
     }
 
-    private void ResetFarmingStates()
+    private void ResetHerbPatchStates()
     {
-        ArdougneFarmingState = new FarmingState("Ardougne", new String[] {});
-        ArdougneFarmingState.SetPath(Paths.ArdougneTeleportPath1, "Teleport");
+        ArdougneHerbPatch = new HerbPatch("Ardougne", new String[] {});
+        ArdougneHerbPatch.SetPath(Paths.ArdougneHerbTeleportPath1, "Teleport");
 
-        CatherbyFarmingState = new FarmingState("Catherby", new String[] {});
-        CatherbyFarmingState.SetPath(Paths.CatherbyTeleportPath1, "Camelot");
+        CatherbyHerbPatch = new HerbPatch("Catherby", new String[] {});
+        CatherbyHerbPatch.SetPath(Paths.CatherbyHerbTeleportPath1, "Camelot");
 
-        CivitasIllaFortisFarmingState = new FarmingState("Civitas", new String[] {});
+        CivitasIllaFortisHerbPatch = new HerbPatch("Civitas", new String[] {});
 
-        FaladorFarmingState = new FarmingState("Falador", new String[] {});
-        FaladorFarmingState.SetPath(Paths.FaladorTeleportPath1, "Teleport1");
-        FaladorFarmingState.SetPath(Paths.FaladorTeleportPath2, "Teleport2");
+        FaladorHerbPatch = new HerbPatch("Falador", new String[] {});
+        FaladorHerbPatch.SetPath(Paths.FaladorHerbTeleportPath1, "Teleport1");
+        FaladorHerbPatch.SetPath(Paths.FaladorHerbTeleportPath2, "Teleport2");
 
-        FarmingGuildFarmingState = new FarmingState("Farming guild", new String[] {});
+        FarmingGuildHerbPatch = new HerbPatch("Farming guild", new String[] {});
 
-        HarmonyIslandFarmingState = new FarmingState("Harmony", new String[] {});
+        HarmonyIslandHerbPatch = new HerbPatch("Harmony", new String[] {});
 
-        HosidiusFarmingState = new FarmingState("Hosidius", new String[] {});
+        HosidiusHerbPatch = new HerbPatch("Hosidius", new String[] {});
 
-        PortPhasmatysFarmingState = new FarmingState("Port Phasmatys", new String[] {});
+        PortPhasmatysHerbPatch = new HerbPatch("Port Phasmatys", new String[] {});
 
-        TrollStrongholdFarmingState = new FarmingState("Troll Stronghold", new String[] {});
+        TrollStrongholdHerbPatch = new HerbPatch("Troll Stronghold", new String[] {});
 
-        WeissFarmingState = new FarmingState("Weiss", new String[] {});
+        WeissHerbPatch = new HerbPatch("Weiss", new String[] {});
+    }
+
+    private void ResetTreePatchStates()
+    {
+        FaladorTreePatch = new TreePatch("Falador", "Heskel", new String[] {});
+
     }
 
     private void handleState() {
@@ -177,28 +177,37 @@ public class BobTheFarmerPlugin extends Plugin {
             case TIMEOUT:
                 timeout--;
                 break;
-            case RESTOCK:
+
+            //HERBS
+            case RESTOCK_HERB:
                 Restock();
                 break;
-            case TRAVEL_ARDOUGNE:
-                TravelToArdougne(ArdougneFarmingState);
+            case HERB_TRAVEL_ARDOUGNE:
+                TravelToArdougne(ArdougneHerbPatch);
                 break;
-            case ARDOUGNE:
-                FarmHerbs(ArdougneFarmingState);
+            case HERB_ARDOUGNE:
+                FarmHerbs(ArdougneHerbPatch);
                 break;
-            case TRAVEL_CATHERBY:
-                TravelToCatherby(CatherbyFarmingState);
+            case HERB_TRAVEL_CATHERBY:
+                TravelToCatherby(CatherbyHerbPatch);
                 break;
-            case CATHERBY:
-                FarmHerbs(CatherbyFarmingState);
+            case HERB_CATHERBY:
+                FarmHerbs(CatherbyHerbPatch);
                 break;
-            case TRAVEL_FALADOR:
-                TravelToFalador(FaladorFarmingState);
+            case HERB_TRAVEL_FALADOR:
+                TravelToFalador(FaladorHerbPatch);
                 break;
-            case FALADOR:
-                FarmHerbs(FaladorFarmingState);
+            case HERB_FALADOR:
+                FarmHerbs(FaladorHerbPatch);
                 break;
 
+            //TREE
+            case RESTOCK_TREE:
+                break;
+            case TREE_TRAVEL_FALADOR:
+                break;
+            case TREE_FALADOR:
+                break;
         }
     }
 
@@ -212,93 +221,97 @@ public class BobTheFarmerPlugin extends Plugin {
         if (!herbRun && !treeRun)
             return null;
 
-        if (!hasStocked && !config.debugDisableRestock())
-            return State.RESTOCK;
+        if (herbRun)
+        {
+            if (!hasStockedHerb && !config.debugDisableRestock())
+                return State.RESTOCK_HERB;
 
-        if (config.enableArdougne() && ArdougneFarmingState.HerbPatchState.Index < 2)
-        {
-            return State.TRAVEL_ARDOUGNE;
-        }
-        if (config.enableArdougne() && ArdougneFarmingState.HerbPatchState.Index >= 2 &&
-                ArdougneFarmingState.HerbPatchState != ProcessState.DONE)
-        {
-            return State.ARDOUGNE;
+            if (config.enableArdougne() && ArdougneHerbPatch.State.Index < 2)
+                return State.HERB_TRAVEL_ARDOUGNE;
+            if (config.enableArdougne() && ArdougneHerbPatch.State.Index >= 2 &&
+                    ArdougneHerbPatch.State != HerbPatchState.DONE)
+                return State.HERB_ARDOUGNE;
+
+            if (config.enableCatherby() && CatherbyHerbPatch.State.Index < 2)
+                return State.HERB_TRAVEL_CATHERBY;
+            if (config.enableCatherby() && CatherbyHerbPatch.State.Index >= 2 &&
+                    CatherbyHerbPatch.State != HerbPatchState.DONE)
+                return State.HERB_CATHERBY;
+
+            if (config.enableFalador() && FaladorHerbPatch.State.Index < 2)
+                return State.HERB_TRAVEL_FALADOR;
+            if (config.enableFalador() && FaladorHerbPatch.State.Index >= 2 &&
+                    FaladorHerbPatch.State != HerbPatchState.DONE)
+                return State.HERB_FALADOR;
         }
 
-        if (config.enableCatherby() && CatherbyFarmingState.HerbPatchState.Index < 2)
+        if (treeRun)
         {
-            return State.TRAVEL_CATHERBY;
-        }
-        if (config.enableCatherby() && CatherbyFarmingState.HerbPatchState.Index >= 2 &&
-                CatherbyFarmingState.HerbPatchState != ProcessState.DONE)
-        {
-            return State.CATHERBY;
+            if (!hasStockedTree && !config.debugDisableRestock())
+                return State.RESTOCK_TREE;
+            if (config.enableTreeFalador() && FaladorTreePatch.State.Index < 2)
+                return State.TREE_TRAVEL_FALADOR;
+            if (config.enableTreeFalador() && FaladorTreePatch.State.Index >= 2 &&
+                    FaladorTreePatch.State != TreePatchState.DONE)
+                return State.TREE_FALADOR;
+
         }
 
-        if (config.enableFalador() && FaladorFarmingState.HerbPatchState.Index < 2)
-        {
-            return State.TRAVEL_FALADOR;
-        }
-        if (config.enableFalador() && FaladorFarmingState.HerbPatchState.Index >= 2 &&
-                FaladorFarmingState.HerbPatchState != ProcessState.DONE)
-        {
-            return State.FALADOR;
-        }
 
         Stop("Done");
         return null;
     }
 
 
-    private ProcessState FarmHerbsState(FarmingState currentState)
+    private HerbPatchState FarmHerbsState(HerbPatch currentState)
     {
         //Check if there is any weeds in the inventory and drop them if there is
         if (Inventory.search().withName("Weeds").first().isPresent())
-            return ProcessState.EMPTY_INVENTORY;
+            return HerbPatchState.EMPTY_INVENTORY;
 
         //Check if the patch is not fully grown then mark the patch as done
-        if (TileObjects.search().withName("Herbs").first().isPresent() && currentState.HerbPatchState != ProcessState.PLANTING)
+        if (TileObjects.search().withName("Herbs").first().isPresent() && currentState.State != HerbPatchState.PLANTING)
             if (!Arrays.asList(TileObjectQuery.getObjectComposition(TileObjects.search().withName("Herbs").first().get()).getActions()).contains("Pick"))
-                return ProcessState.NOTE;
+                return HerbPatchState.NOTE;
 
         //Harvest herbs if there is any
         if (TileObjects.search().withName("Herbs").withAction("Pick").first().isPresent())
-            return ProcessState.HARVEST;
+            return HerbPatchState.HARVEST;
 
         //Clear dead herbs
         if (TileObjects.search().withName("Dead herbs").withAction("Clear").first().isPresent())
-            return ProcessState.CLEAR;
+            return HerbPatchState.CLEAR;
 
         //Plant new herbs
         if (TileObjects.search().nameContains("Herb patch").withAction("Rake").first().isPresent()){
-            return ProcessState.RAKE;
+            return HerbPatchState.RAKE;
         }
 
         //Check if herb patch is ready for planting
         if (TileObjects.search().nameContains("Herb patch").withAction("Inspect").first().isPresent()) {
             if (Inventory.search().withName(config.herb().SeedName).first().isPresent())
                 //Use seed on herb patch
-                return ProcessState.PLANTING;
+                return HerbPatchState.PLANTING;
         }
 
         //Use compost on the herbs
         if (TileObjects.search().nameContains("Herbs").withAction("Inspect").first().isPresent()) {
             if (Inventory.search().withName(config.compost()).first().isPresent())
-                return ProcessState.COMPOST;
+                return HerbPatchState.COMPOST;
         }
 
-        return ProcessState.PROCESS_HERB_PATCH;
+        return HerbPatchState.PROCESS_HERB_PATCH;
     }
 
-    private void FarmHerbs(FarmingState state)
+    private void FarmHerbs(HerbPatch state)
     {
-        if (state.HerbPatchState.Index < 2 || state.HerbPatchState == ProcessState.DONE)
+        if (state.State.Index < 2 || state.State == HerbPatchState.DONE)
             return;
 
-        state.HerbPatchState = FarmHerbsState(state);
+        state.State = FarmHerbsState(state);
         SetDisplayState(state);
 
-        switch (state.HerbPatchState)
+        switch (state.State)
         {
             case HARVEST: //Harvest herbs if there is any
                 TileObjects.search().withName("Herbs").withAction("Pick").first().ifPresent(herb -> {
@@ -333,13 +346,13 @@ public class BobTheFarmerPlugin extends Plugin {
             case COMPOST:
                 //Use compost on the herbs
                 TileObjects.search().nameContains("Herbs").withAction("Inspect").first().ifPresent(tileObject -> {
-                    state.HerbPatchState = ProcessState.COMPOST;
+                    state.State = HerbPatchState.COMPOST;
                     Inventory.search().withName(config.compost()).first().ifPresent(item -> {
                         //Use compost on herb patch
                         MousePackets.queueClickPacket();
                         MousePackets.queueClickPacket();
                         ObjectPackets.queueWidgetOnTileObject(item, tileObject);
-                        state.HerbPatchState = ProcessState.NOTE;
+                        state.State = HerbPatchState.NOTE;
                     });
                 });
                 break;
@@ -359,10 +372,10 @@ public class BobTheFarmerPlugin extends Plugin {
                         NPCPackets.queueWidgetOnNPC(leprechaun, herbs);
                     });
                 });
-                state.HerbPatchState = ProcessState.DONE;
+                state.State = HerbPatchState.DONE;
                 break;
         }
-        if (state.HerbPatchState != ProcessState.PROCESS_HERB_PATCH && state.HerbPatchState != ProcessState.EMPTY_INVENTORY)
+        if (state.State != HerbPatchState.PROCESS_HERB_PATCH && state.State != HerbPatchState.EMPTY_INVENTORY)
             setTimeout();
     }
 
@@ -372,25 +385,25 @@ public class BobTheFarmerPlugin extends Plugin {
             ArrayList<String> keepItems = new ArrayList<String>(Arrays.asList(Tools));
 
             if (config.enableArdougne())
-                keepItems.addAll(Arrays.asList(ArdougneFarmingState.Tools));
+                keepItems.addAll(Arrays.asList(ArdougneHerbPatch.Tools));
             if (config.enableCatherby())
-                keepItems.addAll(Arrays.asList(CatherbyFarmingState.Tools));
+                keepItems.addAll(Arrays.asList(CatherbyHerbPatch.Tools));
             if (config.enableCivitasIllaFortis())
-                keepItems.addAll(Arrays.asList(CivitasIllaFortisFarmingState.Tools));
+                keepItems.addAll(Arrays.asList(CivitasIllaFortisHerbPatch.Tools));
             if (config.enableFalador())
-                keepItems.addAll(Arrays.asList(FaladorFarmingState.Tools));
+                keepItems.addAll(Arrays.asList(FaladorHerbPatch.Tools));
             if (config.enableFarmingGuild())
-                keepItems.addAll(Arrays.asList(FarmingGuildFarmingState.Tools));
+                keepItems.addAll(Arrays.asList(FarmingGuildHerbPatch.Tools));
             if (config.enableHarmonyIsland())
-                keepItems.addAll(Arrays.asList(HarmonyIslandFarmingState.Tools));
+                keepItems.addAll(Arrays.asList(HarmonyIslandHerbPatch.Tools));
             if (config.enableHosidius())
-                keepItems.addAll(Arrays.asList(HosidiusFarmingState.Tools));
+                keepItems.addAll(Arrays.asList(HosidiusHerbPatch.Tools));
             if (config.enablePortPhasmatys())
-                keepItems.addAll(Arrays.asList(PortPhasmatysFarmingState.Tools));
+                keepItems.addAll(Arrays.asList(PortPhasmatysHerbPatch.Tools));
             if (config.enableTrollStronghold())
-                keepItems.addAll(Arrays.asList(TrollStrongholdFarmingState.Tools));
+                keepItems.addAll(Arrays.asList(TrollStrongholdHerbPatch.Tools));
             if (config.enableWeiss())
-                keepItems.addAll(Arrays.asList(WeissFarmingState.Tools));
+                keepItems.addAll(Arrays.asList(WeissHerbPatch.Tools));
 
             int patches = 0;
             patches += config.enableArdougne() ? 1 : 0;
@@ -443,7 +456,7 @@ public class BobTheFarmerPlugin extends Plugin {
             //Take out tools that are needed for the Ardougne herb patch
             if (config.enableArdougne())
             {
-                for (String tool : ArdougneFarmingState.Tools)
+                for (String tool : ArdougneHerbPatch.Tools)
                 {
                     if (!TakeOutItemFromBank(tool, 1)) {
                         Stop("Missing " + tool + " in bank");
@@ -461,7 +474,7 @@ public class BobTheFarmerPlugin extends Plugin {
             //Take out tools that are needed for the Catherby herb patch
             if (config.enableCatherby())
             {
-                for (String tool : CatherbyFarmingState.Tools)
+                for (String tool : CatherbyHerbPatch.Tools)
                 {
                     if (!TakeOutItemFromBank(tool, 1)) {
                         Stop("Missing " + tool + " in bank");
@@ -473,7 +486,7 @@ public class BobTheFarmerPlugin extends Plugin {
             //Take out tools that are needed for the Falador herb patch
             if (config.enableFalador())
             {
-                for (String tool : FaladorFarmingState.Tools)
+                for (String tool : FaladorHerbPatch.Tools)
                 {
                     if (!TakeOutItemFromBank(tool, 1)) {
                         Stop("Missing " + tool + " in bank");
@@ -489,7 +502,7 @@ public class BobTheFarmerPlugin extends Plugin {
             }
 
             //Make sure we have all items and mark it as clear
-            hasStocked = true;
+            hasStockedHerb = true;
             setTimeout();
         }
         else {
@@ -539,12 +552,12 @@ public class BobTheFarmerPlugin extends Plugin {
         return succeeded.get();
     }
 
-    private void TravelToArdougne(FarmingState state)
+    private void TravelToArdougne(HerbPatch state)
     {
-        ArdougneFarmingState.HerbPatchState = ProcessState.TRAVEL;
+        ArdougneHerbPatch.State = HerbPatchState.TRAVEL;
         SetDisplayState(state);
 
-        if (ArdougneFarmingState.PathIndex == 0)
+        if (ArdougneHerbPatch.PathIndex == 0)
         {
             for (int i = 4; i >= 2; i--) {
                 if (Inventory.search().withName("Ardougne cloak " + i).first().isPresent())
@@ -555,21 +568,21 @@ public class BobTheFarmerPlugin extends Plugin {
                             "Farm Teleport");
                 }
             }
-            ArdougneFarmingState.PathIndex = 1;
+            ArdougneHerbPatch.PathIndex = 1;
             timeout = 4;
             return;
         }
-        if (ArdougneFarmingState.PathIndex == 1)
+        if (ArdougneHerbPatch.PathIndex == 1)
         {
-            ArdougneFarmingState.HerbPatchState = ProcessState.PROCESS_HERB_PATCH;
+            ArdougneHerbPatch.State = HerbPatchState.PROCESS_HERB_PATCH;
             return;
         }
-        if (ArdougneFarmingState.PathIndex == 2)
+        if (ArdougneHerbPatch.PathIndex == 2)
         {
             if (CastTeleportSpell(WidgetInfoExtended.SPELL_ARDOUGNE_TELEPORT))
             {
                 ResetPath();
-                ArdougneFarmingState.PathIndex = 3;
+                ArdougneHerbPatch.PathIndex = 3;
                 setTimeout();
             }
             else
@@ -578,21 +591,21 @@ public class BobTheFarmerPlugin extends Plugin {
             }
             return;
         }
-        if (ArdougneFarmingState.PathIndex == 3)
+        if (ArdougneHerbPatch.PathIndex == 3)
         {
-            if (TravelPath(ArdougneFarmingState.Paths.get("Teleport")))
+            if (TravelPath(ArdougneHerbPatch.Paths.get("Teleport")))
             {
-                ArdougneFarmingState.HerbPatchState = ProcessState.PROCESS_HERB_PATCH;
+                ArdougneHerbPatch.State = HerbPatchState.PROCESS_HERB_PATCH;
             }
         }
     }
 
-    private void TravelToFalador(FarmingState state)
+    private void TravelToFalador(HerbPatch state)
     {
-        FaladorFarmingState.HerbPatchState = ProcessState.TRAVEL;
+        FaladorHerbPatch.State = HerbPatchState.TRAVEL;
         SetDisplayState(state);
 
-        if (FaladorFarmingState.PathIndex == 0)
+        if (FaladorHerbPatch.PathIndex == 0)
         {
             for (int i = 4; i >= 2; i--) {
                 if (Inventory.search().withName("Explorer's ring " + i).first().isPresent())
@@ -603,21 +616,21 @@ public class BobTheFarmerPlugin extends Plugin {
                             "Teleport");
                 }
             }
-            FaladorFarmingState.PathIndex = 1;
+            FaladorHerbPatch.PathIndex = 1;
             timeout = 8;
             return;
         }
-        if (FaladorFarmingState.PathIndex == 1)
+        if (FaladorHerbPatch.PathIndex == 1)
         {
-            FaladorFarmingState.HerbPatchState = ProcessState.PROCESS_HERB_PATCH;
+            FaladorHerbPatch.State = HerbPatchState.PROCESS_HERB_PATCH;
             return;
         }
-        if (FaladorFarmingState.PathIndex == 10)
+        if (FaladorHerbPatch.PathIndex == 10)
         {
             if (CastTeleportSpell(WidgetInfoExtended.SPELL_FALADOR_TELEPORT))
             {
                 ResetPath();
-                FaladorFarmingState.PathIndex = 11;
+                FaladorHerbPatch.PathIndex = 11;
                 setTimeout();
             }
             else
@@ -626,16 +639,16 @@ public class BobTheFarmerPlugin extends Plugin {
             }
             return;
         }
-        if (FaladorFarmingState.PathIndex == 11)
+        if (FaladorHerbPatch.PathIndex == 11)
         {
-            if (TravelPath(FaladorFarmingState.Paths.get("Teleport1")))
+            if (TravelPath(FaladorHerbPatch.Paths.get("Teleport1")))
             {
-                FaladorFarmingState.PathIndex = 12;
+                FaladorHerbPatch.PathIndex = 12;
                 setTimeout();
             }
             return;
         }
-        if (FaladorFarmingState.PathIndex == 12)
+        if (FaladorHerbPatch.PathIndex == 12)
         {
             TileObjects.search()
                     .nameContains("Gate")
@@ -648,19 +661,19 @@ public class BobTheFarmerPlugin extends Plugin {
                         TileObjectInteraction.interact(gate, "Open");
             });
             ResetPath();
-            FaladorFarmingState.PathIndex = 13;
+            FaladorHerbPatch.PathIndex = 13;
             return;
         }
-        if (FaladorFarmingState.PathIndex == 13)
+        if (FaladorHerbPatch.PathIndex == 13)
         {
-            if (TravelPath(FaladorFarmingState.Paths.get("Teleport2")))
+            if (TravelPath(FaladorHerbPatch.Paths.get("Teleport2")))
             {
-                FaladorFarmingState.PathIndex = 14;
+                FaladorHerbPatch.PathIndex = 14;
                 setTimeout();
             }
             return;
         }
-        if (FaladorFarmingState.PathIndex == 14)
+        if (FaladorHerbPatch.PathIndex == 14)
         {
             TileObjects.search()
                     .nameContains("Stile")
@@ -673,22 +686,22 @@ public class BobTheFarmerPlugin extends Plugin {
                         TileObjectInteraction.interact(gate, "Climb-over");
                     });
             timeout = 4;
-            FaladorFarmingState.HerbPatchState = ProcessState.PROCESS_HERB_PATCH;
+            FaladorHerbPatch.State = HerbPatchState.PROCESS_HERB_PATCH;
         }
 
     }
 
-    private void TravelToCatherby(FarmingState state)
+    private void TravelToCatherby(HerbPatch state)
     {
-        CatherbyFarmingState.HerbPatchState = ProcessState.TRAVEL;
+        CatherbyHerbPatch.State = HerbPatchState.TRAVEL;
         SetDisplayState(state);
 
-        if (CatherbyFarmingState.PathIndex == 0)
+        if (CatherbyHerbPatch.PathIndex == 0)
         {
             if (CastTeleportSpell(WidgetInfoExtended.SPELL_CAMELOT_TELEPORT))
             {
                 ResetPath();
-                CatherbyFarmingState.PathIndex = 1;
+                CatherbyHerbPatch.PathIndex = 1;
                 setTimeout();
             }
             else
@@ -696,18 +709,18 @@ public class BobTheFarmerPlugin extends Plugin {
                 Stop("Couldn't teleport to Camelot");
             }
         }
-        if (CatherbyFarmingState.PathIndex == 1)
+        if (CatherbyHerbPatch.PathIndex == 1)
         {
-            if (TravelPath(CatherbyFarmingState.Paths.get("Camelot")))
+            if (TravelPath(CatherbyHerbPatch.Paths.get("Camelot")))
             {
-                CatherbyFarmingState.PathIndex = 2;
+                CatherbyHerbPatch.PathIndex = 2;
                 setTimeout();
             }
             return;
         }
-        if (CatherbyFarmingState.PathIndex == 2)
+        if (CatherbyHerbPatch.PathIndex == 2)
         {
-            CatherbyFarmingState.HerbPatchState = ProcessState.PROCESS_HERB_PATCH;
+            CatherbyHerbPatch.State = HerbPatchState.PROCESS_HERB_PATCH;
         }
     }
 
@@ -751,9 +764,9 @@ public class BobTheFarmerPlugin extends Plugin {
         return false;
     }
 
-    private void SetDisplayState(FarmingState state)
+    private void SetDisplayState(HerbPatch state)
     {
-        FarmingStateDisplay = state;
+        HerbPatchStateDisplay = state;
     }
 
     private void setTimeout() {

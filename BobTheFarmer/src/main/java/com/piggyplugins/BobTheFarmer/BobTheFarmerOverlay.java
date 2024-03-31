@@ -29,7 +29,7 @@ public class BobTheFarmerOverlay extends OverlayPanel {
                 .color(new Color(255, 157, 249))
                 .build());
         panelComponent.getChildren().add(TitleComponent.builder()
-                .text(plugin.started ? "Running" + (plugin.herbRun ? ", Herb run" : "") : "Paused")
+                .text(plugin.started ? "Running" + (plugin.herbRun ? ", Herb run" : "") + (plugin.treeRun ? ", Tree run" : "") : "Paused")
                 .color(plugin.started ? Color.GREEN : Color.RED)
                 .build());
         panelComponent.getChildren().add(LineComponent.builder()
@@ -39,9 +39,9 @@ public class BobTheFarmerOverlay extends OverlayPanel {
                 .rightColor(Color.WHITE)
                 .build());
         panelComponent.getChildren().add(LineComponent.builder()
-                .left(plugin.state==null || plugin.FarmingStateDisplay==null || !plugin.started ? "" : plugin.FarmingStateDisplay.Name)
+                .left(plugin.state==null || plugin.HerbPatchStateDisplay ==null || !plugin.started ? "" : plugin.HerbPatchStateDisplay.Name)
                 .leftColor(new Color(255, 157, 249))
-                .right(plugin.state==null || plugin.FarmingStateDisplay==null || !plugin.started ? "" : plugin.FarmingStateDisplay.HerbPatchState.name())
+                .right(plugin.state==null || plugin.HerbPatchStateDisplay ==null || !plugin.started ? "" : plugin.HerbPatchStateDisplay.State.name())
                 .rightColor(Color.WHITE)
                 .build());
         panelComponent.getChildren().add(LineComponent.builder()

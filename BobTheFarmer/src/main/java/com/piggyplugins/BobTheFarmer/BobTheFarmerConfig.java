@@ -40,7 +40,7 @@ public interface BobTheFarmerConfig extends Config {
             keyName = "toggle",
             name = "Toggle",
             description = "",
-            position = 1
+            position = -3
     )
     default Keybind toggle() {
         return Keybind.NOT_SET;
@@ -49,7 +49,7 @@ public interface BobTheFarmerConfig extends Config {
             keyName = "doHerbRun",
             name = "Do Herb run",
             description = "",
-            position = 2
+            position = -2
     )
     default Keybind doHerbRun() {
         return Keybind.NOT_SET;
@@ -58,7 +58,7 @@ public interface BobTheFarmerConfig extends Config {
             keyName = "doTreeRun",
             name = "Do Tree run",
             description = "",
-            position = 2
+            position = -2
     )
     default Keybind doTreeRun() {
         return Keybind.NOT_SET;
@@ -67,7 +67,7 @@ public interface BobTheFarmerConfig extends Config {
             keyName = "debugKey",
             name = "Bob the debugger",
             description = "",
-            position = 2
+            position = -2
     )
     default Keybind debugKey() {
         return Keybind.NOT_SET;

@@ -1,6 +1,6 @@
 package com.piggyplugins.BobTheFarmer;
 
-public enum ProcessState
+public enum HerbPatchState
 {
     NOT_STARTED(0),
     TRAVEL(1),
@@ -15,7 +15,7 @@ public enum ProcessState
     DONE(10);
 
     public final int Index;
-    private ProcessState(int index)
+    private HerbPatchState(int index)
     {
         this.Index = index;
     }
