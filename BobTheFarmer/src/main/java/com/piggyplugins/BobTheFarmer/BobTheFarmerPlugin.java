@@ -46,18 +46,18 @@ public class BobTheFarmerPlugin extends Plugin {
     private OverlayManager overlayManager;
     @Inject
     private BobTheFarmerOverlay overlay;
+
+    //------------------------------------- General variables -------------------------------------
     State state;
     WorldPoint debugPoint = new WorldPoint(0,0,0);
     boolean started;
-    boolean herbRun;
-    boolean treeRun;
     private int timeout;
     public String debug = "";
-    private boolean hasStockedHerb = false;
-    private boolean hasStockedTree = false;
-    private final String[] Tools =  {"Magic secateurs", "Spade", "Rake", "Seed dibber" };
 
-    //Herb patches
+    //------------------------------------- Herb variables -------------------------------------
+    boolean herbRun = false;
+    private final String[] HerbTools =  {"Magic secateurs", "Spade", "Rake", "Seed dibber" };
+    private BankState herbBankState = BankState.DEPOSIT;
     HerbPatch HerbPatchStateDisplay = null;
     private HerbPatch ArdougneHerbPatch = null;
     private HerbPatch CatherbyHerbPatch = null;
@@ -70,7 +70,10 @@ public class BobTheFarmerPlugin extends Plugin {
     private HerbPatch TrollStrongholdHerbPatch = null;
     private HerbPatch WeissHerbPatch = null;
 
-    //Tree patches
+    //------------------------------------- Tree variables -------------------------------------
+    boolean treeRun = false;
+    private final String[] TreeTools = {"Spade", "Rake"};
+    private BankState treeBankState = BankState.DEPOSIT;
     TreePatch TreePatchStateDisplay = null;
     private TreePatch FaladorTreePatch = null;
 
@@ -84,7 +87,6 @@ public class BobTheFarmerPlugin extends Plugin {
         keyManager.registerKeyListener(hotkeyListenerDebug);
         this.overlayManager.add(overlay);
     }
-
     @Override
     protected void shutDown() throws Exception {
         keyManager.unregisterKeyListener(hotkeyListenerToggle);
@@ -93,12 +95,10 @@ public class BobTheFarmerPlugin extends Plugin {
         keyManager.unregisterKeyListener(hotkeyListenerDebug);
         this.overlayManager.remove(overlay);
     }
-
     @Provides
     private BobTheFarmerConfig getConfig(ConfigManager configManager) {
         return configManager.getConfig(BobTheFarmerConfig.class);
     }
-
     @Subscribe
     private void onChatMessage(ChatMessage message)
     {
@@ -118,7 +118,8 @@ public class BobTheFarmerPlugin extends Plugin {
     private void onGameTick(GameTick event) {
         if (!EthanApiPlugin.loggedIn() || !started) {
             // We do an early return if the user isn't logged in
-            hasStockedHerb = false;
+            herbBankState = BankState.DEPOSIT;
+            treeBankState = BankState.DEPOSIT;
             herbRun = false;
             treeRun = false;
             return;
@@ -134,8 +135,7 @@ public class BobTheFarmerPlugin extends Plugin {
         handleState();
     }
 
-    private void ResetHerbPatchStates()
-    {
+    private void ResetHerbPatchStates() {
         ArdougneHerbPatch = new HerbPatch("Ardougne", new String[] {});
         ArdougneHerbPatch.SetPath(Paths.ArdougneHerbTeleportPath1, "Teleport");
 
@@ -160,13 +160,12 @@ public class BobTheFarmerPlugin extends Plugin {
 
         WeissHerbPatch = new HerbPatch("Weiss", new String[] {});
     }
-
-    private void ResetTreePatchStates()
-    {
+    private void ResetTreePatchStates() {
         FaladorTreePatch = new TreePatch("Falador", "Heskel", new String[] {});
 
     }
 
+    //------------------------------------- State machine -------------------------------------
     private void handleState() {
         if (state == null)
             return;
@@ -180,22 +179,22 @@ public class BobTheFarmerPlugin extends Plugin {
 
             //HERBS
             case RESTOCK_HERB:
-                Restock();
+                RestockHerb();
                 break;
             case HERB_TRAVEL_ARDOUGNE:
-                TravelToArdougne(ArdougneHerbPatch);
+                TravelToArdougneHerbPatch(ArdougneHerbPatch);
                 break;
             case HERB_ARDOUGNE:
                 FarmHerbs(ArdougneHerbPatch);
                 break;
             case HERB_TRAVEL_CATHERBY:
-                TravelToCatherby(CatherbyHerbPatch);
+                TravelToCatherbyHerbPatch(CatherbyHerbPatch);
                 break;
             case HERB_CATHERBY:
                 FarmHerbs(CatherbyHerbPatch);
                 break;
             case HERB_TRAVEL_FALADOR:
-                TravelToFalador(FaladorHerbPatch);
+                TravelToFaladorHerbPatch(FaladorHerbPatch);
                 break;
             case HERB_FALADOR:
                 FarmHerbs(FaladorHerbPatch);
@@ -203,6 +202,7 @@ public class BobTheFarmerPlugin extends Plugin {
 
             //TREE
             case RESTOCK_TREE:
+                RestockTree();
                 break;
             case TREE_TRAVEL_FALADOR:
                 break;
@@ -210,7 +210,6 @@ public class BobTheFarmerPlugin extends Plugin {
                 break;
         }
     }
-
     private State getNextState() {
         if (EthanApiPlugin.isMoving() || client.getLocalPlayer().getAnimation() != -1) {
             return State.ANIMATING;
@@ -219,11 +218,11 @@ public class BobTheFarmerPlugin extends Plugin {
             return State.TIMEOUT;
         }
         if (!herbRun && !treeRun)
-            return null;
+            return State.OFF;
 
         if (herbRun)
         {
-            if (!hasStockedHerb && !config.debugDisableRestock())
+            if (herbBankState != BankState.DONE && !config.debugDisableRestock())
                 return State.RESTOCK_HERB;
 
             if (config.enableArdougne() && ArdougneHerbPatch.State.Index < 2)
@@ -243,28 +242,25 @@ public class BobTheFarmerPlugin extends Plugin {
             if (config.enableFalador() && FaladorHerbPatch.State.Index >= 2 &&
                     FaladorHerbPatch.State != HerbPatchState.DONE)
                 return State.HERB_FALADOR;
+            herbRun = false;
         }
 
         if (treeRun)
         {
-            if (!hasStockedTree && !config.debugDisableRestock())
+            if (treeBankState != BankState.DONE && !config.debugDisableRestock())
                 return State.RESTOCK_TREE;
             if (config.enableTreeFalador() && FaladorTreePatch.State.Index < 2)
                 return State.TREE_TRAVEL_FALADOR;
             if (config.enableTreeFalador() && FaladorTreePatch.State.Index >= 2 &&
                     FaladorTreePatch.State != TreePatchState.DONE)
                 return State.TREE_FALADOR;
-
+            treeRun = false;
         }
-
-
-        Stop("Done");
-        return null;
+        return State.OFF;
     }
 
-
-    private HerbPatchState FarmHerbsState(HerbPatch currentState)
-    {
+    //------------------------------------- Herbs -------------------------------------
+    private HerbPatchState FarmHerbsState(HerbPatch currentState) {
         //Check if there is any weeds in the inventory and drop them if there is
         if (Inventory.search().withName("Weeds").first().isPresent())
             return HerbPatchState.EMPTY_INVENTORY;
@@ -302,9 +298,7 @@ public class BobTheFarmerPlugin extends Plugin {
 
         return HerbPatchState.PROCESS_HERB_PATCH;
     }
-
-    private void FarmHerbs(HerbPatch state)
-    {
+    private void FarmHerbs(HerbPatch state) {
         if (state.State.Index < 2 || state.State == HerbPatchState.DONE)
             return;
 
@@ -364,10 +358,7 @@ public class BobTheFarmerPlugin extends Plugin {
                 break;
             case NOTE:
                 Inventory.search().nameContains("Grimy").withAction("Clean").onlyUnnoted().first().ifPresent(herbs -> {
-                    debug = "found herb";
-
                     NPCs.search().nameContains("Tool").nearestToPlayer().ifPresent(leprechaun -> {
-                        debug = "found leprechaun";
                         MousePackets.queueClickPacket();
                         NPCPackets.queueWidgetOnNPC(leprechaun, herbs);
                     });
@@ -379,10 +370,30 @@ public class BobTheFarmerPlugin extends Plugin {
             setTimeout();
     }
 
-    private void Restock()
+    //------------------------------------- Herbs -------------------------------------
+    private TreePatchState FarmTreeState(TreePatch currentState){
+        return TreePatchState.PROCESS_TREE_PATCH;
+    }
+    private void FarmTrees(TreePatch state)
     {
+
+    }
+
+    //------------------------------------- Bank -------------------------------------
+    private boolean CompareItem(List<String> keepItems, String compItem) {
+        for (String item : keepItems)
+        {
+            if (compItem.contains(item))
+                return true;
+        }
+        return false;
+    }
+    private void RestockHerb() {
         if (Bank.isOpen()) {
-            ArrayList<String> keepItems = new ArrayList<String>(Arrays.asList(Tools));
+            ArrayList<String> keepItems = new ArrayList<String>(Arrays.asList(HerbTools));
+            keepItems.addAll(Arrays.asList(config.additionalItems().split(",")));
+            keepItems.add(config.herb().SeedName);
+            keepItems.add(config.compost());
 
             if (config.enableArdougne())
                 keepItems.addAll(Arrays.asList(ArdougneHerbPatch.Tools));
@@ -417,115 +428,278 @@ public class BobTheFarmerPlugin extends Plugin {
             patches += config.enableTrollStronghold() ? 1 : 0;
             patches += config.enableWeiss() ? 1 : 0;
 
-            //Deposit items that are not needed
-            List<Widget> bankInv = BankInventory.search().filter(widget -> keepItems.contains(widget.getName())).result();
-            for (Widget item : bankInv) {
-                MousePackets.queueClickPacket();
-                BankInventoryInteraction.useItem(item, "Deposit-All");
-            }
-
-            //Take out basic tools
-            for (String tool : Tools) {
-                if (!TakeOutItemFromBank(tool, 1)) {
-                    Stop("Missing " + tool + " in bank");
-                    return;
-                }
-            }
-
-            //Take out seeds
-            if (!TakeOutItemFromBank(config.herb().SeedName, patches)) {
-                Stop("Missing " + config.herb() + " in bank");
-                return;
-            }
-
-            //Take out compost
-            if (!TakeOutItemFromBank(config.compost(), patches)) {
-                Stop("Missing " + config.herb() + " in bank");
-                return;
-            }
-
-            //Take out additional items
-            String[] additionalItems = config.additionalItems().split(",");
-            for (String tool : additionalItems) {
-                if (!TakeOutItemFromBank(tool, 1)) {
-                    Stop("Missing " + tool + " in bank");
-                    return;
-                }
-            }
-
-            //Take out tools that are needed for the Ardougne herb patch
-            if (config.enableArdougne())
+            switch (herbBankState)
             {
-                for (String tool : ArdougneHerbPatch.Tools)
-                {
-                    if (!TakeOutItemFromBank(tool, 1)) {
-                        Stop("Missing " + tool + " in bank");
-                        return;
+                case DEPOSIT:
+                    //Deposit items that are not needed
+                    List<Widget> bankInv = BankInventory.search().filter(widget -> !CompareItem(keepItems, widget.getName())).result();
+                    for (Widget item : bankInv) {
+                        MousePackets.queueClickPacket();
+                        BankInventoryInteraction.useItem(item, "Deposit-All");
                     }
-                }
+                    break;
+                case WITHDRAW:
+                    if (!getWithdrawNotes())
+                    {
+                        //Take out basic tools
+                        for (String tool : HerbTools) {
+                            if (!TakeOutItemFromBank(tool, 1)) {
+                                Stop("Missing " + tool + " in bank");
+                                return;
+                            }
+                        }
 
-                for (int i = 4; i >= 2; i--) {
-                    if (TakeOutItemFromBank("Ardougne cloak " + i, 1)) {
-                        break;
+                        //Take out seeds
+                        if (!TakeOutItemFromBank(config.herb().SeedName, patches)) {
+                            Stop("Missing " + config.herb().name() + " in bank");
+                            return;
+                        }
+
+                        //Take out compost
+                        if (!TakeOutItemFromBank(config.compost(), patches)) {
+                            Stop("Missing " + config.compost() + " in bank");
+                            return;
+                        }
+
+                        //Take out additional items
+                        String[] additionalItems = config.additionalItems().split(",");
+                        for (String tool : additionalItems) {
+                            if (!TakeOutItemFromBank(tool, 1)) {
+                                Stop("Missing " + tool + " in bank");
+                                return;
+                            }
+                        }
+
+                        //Take out tools that are needed for the Ardougne herb patch
+                        if (config.enableArdougne())
+                        {
+                            for (String tool : ArdougneHerbPatch.Tools)
+                            {
+                                if (!TakeOutItemFromBank(tool, 1)) {
+                                    Stop("Missing " + tool + " in bank");
+                                    return;
+                                }
+                            }
+
+                            for (int i = 4; i >= 2; i--) {
+                                if (TakeOutItemFromBank("Ardougne cloak " + i, 1)) {
+                                    break;
+                                }
+                            }
+                        }
+
+                        //Take out tools that are needed for the Catherby herb patch
+                        if (config.enableCatherby())
+                        {
+                            for (String tool : CatherbyHerbPatch.Tools)
+                            {
+                                if (!TakeOutItemFromBank(tool, 1)) {
+                                    Stop("Missing " + tool + " in bank");
+                                    return;
+                                }
+                            }
+                        }
+
+                        //Take out tools that are needed for the Falador herb patch
+                        if (config.enableFalador())
+                        {
+                            for (String tool : FaladorHerbPatch.Tools)
+                            {
+                                if (!TakeOutItemFromBank(tool, 1)) {
+                                    Stop("Missing " + tool + " in bank");
+                                    return;
+                                }
+                            }
+
+                            for (int i = 4; i >= 2; i--) {
+                                if (TakeOutItemFromBank("Explorer's ring " + i, 1)) {
+                                    break;
+                                }
+                            }
+                        }
                     }
-                }
+                    else
+                    {
+                        setWithdrawNotes(false);
+                    }
+                    break;
+                case WITHDRAW_NOTED:
+                    if (getWithdrawNotes())
+                    {
+
+                    }
+                    else
+                    {
+                        setWithdrawNotes(true);
+                    }
+                    break;
+                case CHECK:
+                    boolean hasAllItems = true;
+                    for (String item : keepItems)
+                    {
+                        if (Inventory.search().nameContains(item).first().isEmpty())
+                        {
+                            hasAllItems = false;
+                            break;
+                        }
+                    }
+                    //Make sure we have all items and mark it as clear
+                    herbBankState = hasAllItems ? BankState.DONE : BankState.DEPOSIT;
+                    break;
             }
-
-            //Take out tools that are needed for the Catherby herb patch
-            if (config.enableCatherby())
-            {
-                for (String tool : CatherbyHerbPatch.Tools)
-                {
-                    if (!TakeOutItemFromBank(tool, 1)) {
-                        Stop("Missing " + tool + " in bank");
-                        return;
-                    }
-                }
-            }
-
-            //Take out tools that are needed for the Falador herb patch
-            if (config.enableFalador())
-            {
-                for (String tool : FaladorHerbPatch.Tools)
-                {
-                    if (!TakeOutItemFromBank(tool, 1)) {
-                        Stop("Missing " + tool + " in bank");
-                        return;
-                    }
-                }
-
-                for (int i = 4; i >= 2; i--) {
-                    if (TakeOutItemFromBank("Explorer's ring " + i, 1)) {
-                        break;
-                    }
-                }
-            }
-
-            //Make sure we have all items and mark it as clear
-            hasStockedHerb = true;
             setTimeout();
         }
         else {
-            Optional<TileObject> bankBooth = TileObjects.search().filter(tileObject -> {
-                ObjectComposition objectComposition = TileObjectQuery.getObjectComposition(tileObject);
-                return getName().toLowerCase().contains("bank") ||
-                        Arrays.stream(objectComposition.getActions()).anyMatch(action -> action != null && action.toLowerCase().contains("bank"));
-            }).nearestToPlayer();
-
-            if (bankBooth.isPresent()) {
-                MousePackets.queueClickPacket();
-                TileObjectInteraction.interact(bankBooth.get(), "Bank");
-            }
-
-            TileObjects.search().withName("Bank chest").nearestToPlayer().ifPresent(tileObject -> {
-                MousePackets.queueClickPacket();
-                TileObjectInteraction.interact(tileObject, "Use");
-            });
+            OpenBank();
         }
     }
+    private void RestockTree() {
+        if (Bank.isOpen()) {
+            ArrayList<String> keepItems = new ArrayList<String>(Arrays.asList(TreeTools));
+            keepItems.addAll(Arrays.asList(config.additionalItems().split(",")));
+            keepItems.add(config.tree().Seed);
+            keepItems.add(config.tree().ProtectionItem);
 
-    private boolean TakeOutItemFromBank(String item, int amount)
-    {
+            if (config.enableTreeFalador())
+                keepItems.addAll(Arrays.asList(FaladorTreePatch.Tools));
+
+            int patches = 0;
+            patches += config.enableTreeFalador() ? 1 : 0;
+
+            switch (treeBankState){
+                //Deposit items that are not needed
+                case DEPOSIT:
+                    List<Widget> bankInv = BankInventory.search().filter(widget -> !CompareItem(keepItems, widget.getName())).result();
+                    for (Widget item : bankInv) {
+                        MousePackets.queueClickPacket();
+                        BankInventoryInteraction.useItem(item, "Deposit-All");
+                    }
+                    treeBankState = BankState.WITHDRAW;
+                    break;
+                //Withdraw items in non noted form
+                case WITHDRAW:
+                    if (!getWithdrawNotes())
+                    {
+                        //Take out basic tools
+                        for (String tool : TreeTools) {
+                            if (!TakeOutItemFromBank(tool, 1)) {
+                                Stop("Missing " + tool + " in bank");
+                                return;
+                            }
+                        }
+
+                        //Take out seeds
+                        if (!TakeOutItemFromBank(config.tree().Seed, patches)) {
+                            Stop("Missing " + config.tree().Seed + " in bank");
+                            return;
+                        }
+
+                        //Take out additional items
+                        String[] additionalItems = config.additionalItems().split(",");
+                        for (String tool : additionalItems) {
+                            if (!TakeOutItemFromBank(tool, 1)) {
+                                Stop("Missing " + tool + " in bank");
+                                return;
+                            }
+                        }
+
+                        //Take out tools that are needed for the Ardougne herb patch
+                        if (config.enableTreeFalador())
+                        {
+                            for (String tool : FaladorTreePatch.Tools)
+                            {
+                                if (!TakeOutItemFromBank(tool, 1)) {
+                                    Stop("Missing " + tool + " in bank");
+                                    return;
+                                }
+                            }
+                        }
+                        treeBankState = BankState.WITHDRAW_NOTED;
+                    }
+                    else
+                    {
+                        setWithdrawNotes(false);
+                    }
+                    break;
+                //Withdraw items in noted form
+                case WITHDRAW_NOTED:
+                    if (getWithdrawNotes())
+                    {
+                        if (getWithdrawNotes())
+                        {
+                            //Take out seeds
+                            if (!TakeOutItemFromBank(config.tree().ProtectionItem, patches)) {
+                                Stop("Missing " + config.tree().ProtectionItem + " in bank");
+                                return;
+                            }
+                        }
+                        treeBankState = BankState.CHECK;
+
+                    }
+                    else
+                    {
+                        setWithdrawNotes(true);
+                    }
+                    break;
+                //Check that we have all items
+                case CHECK:
+                    boolean hasAllItems = true;
+                    for (String item : keepItems)
+                    {
+                        if (Inventory.search().nameContains(item).first().isEmpty())
+                        {
+                            hasAllItems = false;
+                            break;
+                        }
+                    }
+                    treeBankState = hasAllItems ? BankState.DONE : BankState.DEPOSIT;
+                    break;
+            }
+            setTimeout();
+        }
+        else {
+            OpenBank();
+        }
+    }
+    private void OpenBank() {
+        Optional<TileObject> bankBooth = TileObjects.search().filter(tileObject -> {
+            ObjectComposition objectComposition = TileObjectQuery.getObjectComposition(tileObject);
+            return getName().toLowerCase().contains("bank") ||
+                    Arrays.stream(objectComposition.getActions()).anyMatch(action -> action != null && action.toLowerCase().contains("bank"));
+        }).nearestToPlayer();
+
+        if (bankBooth.isPresent()) {
+            MousePackets.queueClickPacket();
+            TileObjectInteraction.interact(bankBooth.get(), "Bank");
+        }
+
+        TileObjects.search().withName("Bank chest").nearestToPlayer().ifPresent(tileObject -> {
+            MousePackets.queueClickPacket();
+            TileObjectInteraction.interact(tileObject, "Use");
+        });
+    }
+    private boolean setWithdrawNotes(boolean noted) {
+        if (!Bank.isOpen()) return false;
+        if (Bank.isOpen()) {
+            if (noted)
+            {
+                MousePackets.queueClickPacket();
+                WidgetPackets.queueWidgetActionPacket(1, 786456, -1, -1);
+                return true;
+            }
+            else
+            {
+                MousePackets.queueClickPacket();
+                WidgetPackets.queueWidgetActionPacket(1, 786454, -1, -1);
+                return true;
+            }
+        }
+        return false;
+    }
+    private boolean getWithdrawNotes() {
+        return client.getVarbitValue(3958) == 1;
+    }
+    private boolean TakeOutItemFromBank(String item, int amount) {
         AtomicBoolean succeeded = new AtomicBoolean(false);
         BankUtil.nameContainsNoCase(item).first().ifPresentOrElse(widget ->
             {
@@ -552,8 +726,8 @@ public class BobTheFarmerPlugin extends Plugin {
         return succeeded.get();
     }
 
-    private void TravelToArdougne(HerbPatch state)
-    {
+    //------------------------------------- Travel -------------------------------------
+    private void TravelToArdougneHerbPatch(HerbPatch state) {
         ArdougneHerbPatch.State = HerbPatchState.TRAVEL;
         SetDisplayState(state);
 
@@ -599,9 +773,7 @@ public class BobTheFarmerPlugin extends Plugin {
             }
         }
     }
-
-    private void TravelToFalador(HerbPatch state)
-    {
+    private void TravelToFaladorHerbPatch(HerbPatch state) {
         FaladorHerbPatch.State = HerbPatchState.TRAVEL;
         SetDisplayState(state);
 
@@ -690,9 +862,7 @@ public class BobTheFarmerPlugin extends Plugin {
         }
 
     }
-
-    private void TravelToCatherby(HerbPatch state)
-    {
+    private void TravelToCatherbyHerbPatch(HerbPatch state) {
         CatherbyHerbPatch.State = HerbPatchState.TRAVEL;
         SetDisplayState(state);
 
@@ -724,13 +894,12 @@ public class BobTheFarmerPlugin extends Plugin {
         }
     }
 
+    //------------------------------------- Travel functions -------------------------------------
     private int pathIndex = 0;
-    private void ResetPath()
-    {
+    private void ResetPath() {
         pathIndex = 0;
     }
-    private boolean TravelPath(WorldPoint[] path)
-    {
+    private boolean TravelPath(WorldPoint[] path) {
         if (EthanApiPlugin.isMoving())
             return false;
 
@@ -747,14 +916,10 @@ public class BobTheFarmerPlugin extends Plugin {
             return true;
         return false;
     }
-
-    private boolean playerAtTarget(WorldPoint targetTile)
-    {
+    private boolean playerAtTarget(WorldPoint targetTile) {
         return client.getLocalPlayer().getWorldLocation().getX() == targetTile.getX() && client.getLocalPlayer().getWorldLocation().getY() == targetTile.getY();
     }
-
-    private boolean CastTeleportSpell(WidgetInfoExtended spell)
-    {
+    private boolean CastTeleportSpell(WidgetInfoExtended spell) {
         Optional<Widget> teleportSpellIcon = Widgets.search().withId(spell.getPackedId()).first();
         if (teleportSpellIcon.isPresent()) {
             MousePackets.queueClickPacket();
@@ -764,37 +929,33 @@ public class BobTheFarmerPlugin extends Plugin {
         return false;
     }
 
-    private void SetDisplayState(HerbPatch state)
-    {
+    //------------------------------------- General functions -------------------------------------
+    private void SetDisplayState(HerbPatch state) {
         HerbPatchStateDisplay = state;
     }
-
     private void setTimeout() {
         timeout = RandomUtils.nextInt(config.tickDelayMin(), config.tickDelayMax());
     }
-
-    public void Stop(String reason)
-    {
+    public void Stop(String reason) {
         started = false;
         debug = reason;
         this.state = State.TIMEOUT;
         herbRun = false;
     }
 
+    //------------------------------------- Hotkey listeners -------------------------------------
     private final HotkeyListener hotkeyListenerToggle = new HotkeyListener(() -> config.toggle()) {
         @Override
         public void hotkeyPressed() {
             toggle();
         }
     };
-
     private final HotkeyListener hotkeyListenerHerbRun = new HotkeyListener(() -> config.doHerbRun()) {
         @Override
         public void hotkeyPressed() {
             herbRun();
         }
     };
-
     private final HotkeyListener hotkeyListenerTreeRun = new HotkeyListener(() -> config.doTreeRun()) {
         @Override
         public void hotkeyPressed() {
@@ -808,34 +969,27 @@ public class BobTheFarmerPlugin extends Plugin {
         }
     };
 
-    public void Debug()
-    {
+    //------------------------------------- Hotkey functions -------------------------------------
+    public void Debug() {
         debugPoint = client.getLocalPlayer().getWorldLocation();
     }
-
-    public void herbRun()
-    {
+    public void herbRun() {
         if (client.getGameState() != GameState.LOGGED_IN) {
             return;
         }
         herbRun = true;
     }
-
-    public void treeRun()
-    {
+    public void treeRun() {
         if (client.getGameState() != GameState.LOGGED_IN) {
             return;
         }
         treeRun = true;
     }
-
     public void toggle() {
         if (client.getGameState() != GameState.LOGGED_IN) {
             return;
         }
         started = !started;
-
-        debug = "";
 
         if (!started) {
             this.state = State.OFF;
