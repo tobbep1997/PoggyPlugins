@@ -47,6 +47,15 @@ public interface BobTheFarmerConfig extends Config {
         return Keybind.NOT_SET;
     }
     @ConfigItem(
+            keyName = "doTreeRun",
+            name = "Do Herb run",
+            description = "",
+            position = 2
+    )
+    default Keybind doTreeRun() {
+        return Keybind.NOT_SET;
+    }
+    @ConfigItem(
             keyName = "debugKey",
             name = "Bob the debugger",
             description = "",
@@ -66,8 +75,8 @@ public interface BobTheFarmerConfig extends Config {
             section = generalConfiguration
 
     )
-    default String seed() {
-        return "Avantoe seed";
+    default Herb seed() {
+        return Herb.Guam_leaf;
     }
 
     @ConfigItem(
@@ -205,8 +214,6 @@ public interface BobTheFarmerConfig extends Config {
     default boolean enableWeiss() {
         return false;
     }
-
-
 
     @ConfigItem(
             name = "Tick Delay Min",

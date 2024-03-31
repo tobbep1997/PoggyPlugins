@@ -92,6 +92,7 @@ public class BobTheFarmerPlugin extends Plugin {
     protected void startUp() throws Exception {
         keyManager.registerKeyListener(hotkeyListenerToggle);
         keyManager.registerKeyListener(hotkeyListenerHerbRun);
+        keyManager.registerKeyListener(hotkeyListenerTreeRun);
         keyManager.registerKeyListener(hotkeyListenerDebug);
         this.overlayManager.add(overlay);
     }
@@ -100,6 +101,7 @@ public class BobTheFarmerPlugin extends Plugin {
     protected void shutDown() throws Exception {
         keyManager.unregisterKeyListener(hotkeyListenerToggle);
         keyManager.unregisterKeyListener(hotkeyListenerHerbRun);
+        keyManager.unregisterKeyListener(hotkeyListenerTreeRun);
         keyManager.unregisterKeyListener(hotkeyListenerDebug);
         this.overlayManager.remove(overlay);
     }
@@ -274,7 +276,7 @@ public class BobTheFarmerPlugin extends Plugin {
 
         //Check if herb patch is ready for planting
         if (TileObjects.search().nameContains("Herb patch").withAction("Inspect").first().isPresent()) {
-            if (Inventory.search().withName(config.seed()).first().isPresent())
+            if (Inventory.search().withName(config.seed().SeedName).first().isPresent())
                 //Use seed on herb patch
                 return ProcessState.PLANTING;
         }
@@ -320,7 +322,7 @@ public class BobTheFarmerPlugin extends Plugin {
                 break;
             case PLANTING:
                 TileObjects.search().nameContains("Herb patch").withAction("Inspect").first().ifPresent(tileObject -> {
-                    Inventory.search().withName(config.seed()).first().ifPresent(item -> {
+                    Inventory.search().withName(config.seed().SeedName).first().ifPresent(item -> {
                         //Use seed on herb patch
                         MousePackets.queueClickPacket();
                         MousePackets.queueClickPacket();
@@ -418,7 +420,7 @@ public class BobTheFarmerPlugin extends Plugin {
             }
 
             //Take out seeds
-            if (!TakeOutItemFromBank(config.seed(), patches)) {
+            if (!TakeOutItemFromBank(config.seed().SeedName, patches)) {
                 Stop("Missing " + config.seed() + " in bank");
                 return;
             }
@@ -780,6 +782,12 @@ public class BobTheFarmerPlugin extends Plugin {
         }
     };
 
+    private final HotkeyListener hotkeyListenerTreeRun = new HotkeyListener(() -> config.doTreeRun()) {
+        @Override
+        public void hotkeyPressed() {
+            treeRun();
+        }
+    };
     private final HotkeyListener hotkeyListenerDebug = new HotkeyListener(() -> config.debugKey()) {
         @Override
         public void hotkeyPressed() {
@@ -798,6 +806,14 @@ public class BobTheFarmerPlugin extends Plugin {
             return;
         }
         herbRun = true;
+    }
+
+    public void treeRun()
+    {
+        if (client.getGameState() != GameState.LOGGED_IN) {
+            return;
+        }
+        treeRun = true;
     }
 
     public void toggle() {
