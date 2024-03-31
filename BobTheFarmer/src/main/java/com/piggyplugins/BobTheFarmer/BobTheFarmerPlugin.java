@@ -6,6 +6,7 @@ import com.example.EthanApiPlugin.EthanApiPlugin;
 import com.example.InteractionApi.*;
 import com.example.PacketUtils.WidgetInfoExtended;
 import com.example.Packets.*;
+import com.google.errorprone.annotations.Var;
 import com.google.inject.Provides;
 import com.piggyplugins.PiggyUtils.API.BankUtil;
 import net.runelite.api.*;
@@ -53,6 +54,7 @@ public class BobTheFarmerPlugin extends Plugin {
     boolean started;
     private int timeout;
     public String debug = "";
+    public String string_state = "";
 
     //------------------------------------- Herb variables -------------------------------------
     boolean herbRun = false;
@@ -140,6 +142,7 @@ public class BobTheFarmerPlugin extends Plugin {
 
         //Get the next step
         state = getNextState();
+        string_state = state.name();
         handleState();
     }
 
@@ -163,7 +166,8 @@ public class BobTheFarmerPlugin extends Plugin {
 
         HosidiusHerbPatch = new HerbPatch("Hosidius", new String[] {});
 
-        PortPhasmatysHerbPatch = new HerbPatch("Port Phasmatys", new String[] {});
+        PortPhasmatysHerbPatch = new HerbPatch("Port Phasmatys", new String[] {"Ectophial"});
+        PortPhasmatysHerbPatch.SetPath(Paths.PortPhasmatysEctophial, "Ectophial");
 
         TrollStrongholdHerbPatch = new HerbPatch("Troll Stronghold", new String[] {});
 
@@ -171,17 +175,24 @@ public class BobTheFarmerPlugin extends Plugin {
     }
     //Resets all tree run data to its default state
     private void ResetTreePatchStates() {
-        FaladorTreePatch = new TreePatch("Falador", "Heskel", new String[] {});
+        FaladorTreePatch = new TreePatch("Falador", "", new String[] {});
         FaladorTreePatch.SetPath(Paths.FaladorTreeTeleportPath, "Teleport");
 
-        FarmingGuildTreePatch = new TreePatch("Falador", "Heskel", new String[] {});
+        FarmingGuildTreePatch = new TreePatch("Farming Guild", "", new String[] {});
 
-        LumbridgeTreePatch = new TreePatch("Falador", "Heskel", new String[] {});
+        LumbridgeTreePatch = new TreePatch("Lumbridge", "", new String[] {});
         LumbridgeTreePatch.SetPath(Paths.LumbridgeTreeTeleportPath, "Teleport");
 
-        TaverleyTreePatch = new TreePatch("Falador", "Heskel", new String[] {});
-        GnomeStrongholdTreePatch = new TreePatch("Falador", "Heskel", new String[] {});
-        VarrockTreePatch = new TreePatch("Falador", "Heskel", new String[] {});
+        TaverleyTreePatch = new TreePatch("Taverley", "", new String[] {});
+        TaverleyTreePatch.SetPath(Paths.TaverleyTreeTeleportPath1, "Teleport1");
+        TaverleyTreePatch.SetPath(Paths.TaverleyTreeTeleportPath2, "Teleport2");
+
+        GnomeStrongholdTreePatch = new TreePatch("Gnome Strongold", "", new String[] {});
+        GnomeStrongholdTreePatch.SetPath(Paths.GnomeStrongholdTreeTeleportPath1, "Teleport1");
+        GnomeStrongholdTreePatch.SetPath(Paths.GnomeStrongholdTreeTeleportPath2, "Teleport2");
+
+        VarrockTreePatch = new TreePatch("Varrock", "", new String[] {});
+        VarrockTreePatch.SetPath(Paths.VarrockTreeTeleportPath, "Teleport");
     }
 
     //------------------------------------- State machine -------------------------------------
@@ -201,6 +212,7 @@ public class BobTheFarmerPlugin extends Plugin {
             //HERBS
             case RESTOCK_HERB:
                 RestockHerb();
+                string_state = herbBankState.name();
                 break;
             case HERB_TRAVEL_ARDOUGNE:
                 TravelToArdougneHerbPatch(ArdougneHerbPatch);
@@ -220,10 +232,17 @@ public class BobTheFarmerPlugin extends Plugin {
             case HERB_FALADOR:
                 FarmHerbs(FaladorHerbPatch);
                 break;
+            case HERB_TRAVEL_PORT_PHASMATYS:
+                TravelToPortPhasmatysHerbPatch(PortPhasmatysHerbPatch);
+                break;
+            case HERB_PORT_PHASMATYS:
+                FarmHerbs(PortPhasmatysHerbPatch);
+                break;
 
             //TREE
             case RESTOCK_TREE:
                 RestockTree();
+                string_state = treeBankState.name();
                 break;
             case TREE_TRAVEL_FALADOR:
                 TravelToFaladorTreePatch(FaladorTreePatch);
@@ -231,12 +250,37 @@ public class BobTheFarmerPlugin extends Plugin {
             case TREE_FALADOR:
                 FarmTrees(FaladorTreePatch);
                 break;
+            case TREE_TRAVEL_TAVERLEY:
+                TravelToTaverlyTreePatch(TaverleyTreePatch);
+                break;
+            case TREE_TAVERLEY:
+                FarmTrees(TaverleyTreePatch);
+                break;
+            case TREE_TRAVEL_VARROCK:
+                TravelToVarrockTreePatch(VarrockTreePatch);
+                break;
+            case TREE_VARROCK:
+                FarmTrees(VarrockTreePatch);
+                break;
             case TREE_TRAVEL_LUMBRIDGE:
                 TravelToLumbridgeTreePatch(LumbridgeTreePatch);
                 break;
             case TREE_LUMBRIDGE:
                 FarmTrees(LumbridgeTreePatch);
                 break;
+            case TREE_TRAVEL_GNOME_STRONGHOLD:
+                TravelToGnomeStrongholdTreePatch(GnomeStrongholdTreePatch);
+                break;
+            case TREE_GNOME_STRONGHOLD:
+                FarmTrees(GnomeStrongholdTreePatch);
+                break;
+            case TREE_TRAVEL_FARMING_GUILD:
+                TravelToFarmingGuildTreePatch(FarmingGuildTreePatch);
+                break;
+            case TREE_FARMING_GUILD:
+                FarmTrees(FarmingGuildTreePatch);
+                break;
+
         }
     }
     //Get the next step for the main state machine
@@ -273,6 +317,12 @@ public class BobTheFarmerPlugin extends Plugin {
             if (config.enableFalador() && FaladorHerbPatch.State.Index >= 2 &&
                     FaladorHerbPatch.State != HerbPatchState.DONE)
                 return State.HERB_FALADOR;
+
+            if (config.enablePortPhasmatys() && PortPhasmatysHerbPatch.State.Index < 2)
+                return State.HERB_TRAVEL_PORT_PHASMATYS;
+            if (config.enablePortPhasmatys() && PortPhasmatysHerbPatch.State.Index >= 2 &&
+                    PortPhasmatysHerbPatch.State != HerbPatchState.DONE)
+                return State.HERB_PORT_PHASMATYS;
             herbRun = false;
         }
 
@@ -288,11 +338,36 @@ public class BobTheFarmerPlugin extends Plugin {
                     FaladorTreePatch.State != TreePatchState.DONE)
                 return State.TREE_FALADOR;
 
+            if (config.enableTreeTaverley() && TaverleyTreePatch.State.Index < 2)
+                return State.TREE_TRAVEL_TAVERLEY;
+            if (config.enableTreeTaverley() && TaverleyTreePatch.State.Index >= 2 &&
+                    TaverleyTreePatch.State != TreePatchState.DONE)
+                return State.TREE_TAVERLEY;
+
             if (config.enableTreeLumbridge() && LumbridgeTreePatch.State.Index < 2)
                 return State.TREE_TRAVEL_LUMBRIDGE;
             if (config.enableTreeLumbridge() && LumbridgeTreePatch.State.Index >= 2 &&
                     LumbridgeTreePatch.State != TreePatchState.DONE)
                 return State.TREE_LUMBRIDGE;
+
+            if (config.enableTreeVarrock() && VarrockTreePatch.State.Index < 2)
+                return State.TREE_TRAVEL_VARROCK;
+            if (config.enableTreeVarrock() && VarrockTreePatch.State.Index >= 2 &&
+                    VarrockTreePatch.State != TreePatchState.DONE)
+                return State.TREE_VARROCK;
+
+            if (config.enableTreeGnomeStronghold() && GnomeStrongholdTreePatch.State.Index < 2)
+                return State.TREE_TRAVEL_GNOME_STRONGHOLD;
+            if (config.enableTreeGnomeStronghold() && GnomeStrongholdTreePatch.State.Index >= 2 &&
+                    GnomeStrongholdTreePatch.State != TreePatchState.DONE)
+                return State.TREE_GNOME_STRONGHOLD;
+
+            if (config.enableTreeFarmingGuild() && FarmingGuildTreePatch.State.Index < 2)
+                return State.TREE_TRAVEL_FARMING_GUILD;
+            if (config.enableTreeFarmingGuild() && FarmingGuildTreePatch.State.Index >= 2 &&
+                    FarmingGuildTreePatch.State != TreePatchState.DONE)
+                return State.TREE_FARMING_GUILD;
+
             treeRun = false;
         }
         return State.OFF;
@@ -345,6 +420,7 @@ public class BobTheFarmerPlugin extends Plugin {
 
         //Get the next state
         herbPatch.State = FarmHerbsState(herbPatch);
+        string_state = herbPatch.State.name();
 
         //Set the display variable so the user can see whats going on
         SetDisplayStateHerb(herbPatch);
@@ -430,20 +506,16 @@ public class BobTheFarmerPlugin extends Plugin {
 
         //Check health of tree
         if (TileObjects.search().withName(config.tree().Tree).withAction("Check-health").nearestToPlayer().isPresent())
-        {
             return TreePatchState.CHECK_HEALTH;
-        }
         //Pay gardener
         if (TileObjects.search().withName(config.tree().Tree).withAction("Chop down").nearestToPlayer().isPresent())
-        {
             return TreePatchState.PAY;
-        }
         //Rake patch
-        if (TileObjects.search().nameContains("Tree patch").withAction("Rake").nearestToPlayer().isPresent()){
+        if (TileObjects.search().withName("Tree patch").withAction("Rake").nearestToPlayer().isPresent()){
             return TreePatchState.RAKE;
         }
         //Plant sapling
-        if (TileObjects.search().nameContains("Tree patch").withAction("Inspect").nearestToPlayer().isPresent())
+        if (TileObjects.search().withName("Tree patch").withAction("Inspect").nearestToPlayer().isPresent())
             if (Inventory.search().withName(config.tree().Sapling).first().isPresent())
                 return TreePatchState.PlANT;
         //Pay to protect
@@ -459,7 +531,7 @@ public class BobTheFarmerPlugin extends Plugin {
 
         //Get the next state
         treePatch.State = FarmTreeState(treePatch);
-
+        string_state = treePatch.State.name();
         //Set the display variable so the user can see whats going on
         SetDisplayStateTree(treePatch);
 
@@ -475,7 +547,7 @@ public class BobTheFarmerPlugin extends Plugin {
                 break;
             //Rake the tree patch
             case RAKE:
-                TileObjects.search().nameContains("Tree patch").withAction("Rake").first().ifPresent(tileObject -> {
+                TileObjects.search().withName("Tree patch").withAction("Rake").nearestToPlayer().ifPresent(tileObject -> {
                     MousePackets.queueClickPacket();
                     TileObjectInteraction.interact(tileObject, "Rake");
                 });
@@ -501,7 +573,7 @@ public class BobTheFarmerPlugin extends Plugin {
                 break;
             //Plant a new sapling
             case PlANT:
-                TileObjects.search().nameContains("Tree patch").withAction("Inspect").nearestToPlayer().ifPresent(patch -> {
+                TileObjects.search().withName("Tree patch").withAction("Inspect").nearestToPlayer().ifPresent(patch -> {
                     Inventory.search().nameContains(config.tree().Sapling).first().ifPresent(item -> {
                         MousePackets.queueClickPacket();
                         MousePackets.queueClickPacket();
@@ -528,7 +600,7 @@ public class BobTheFarmerPlugin extends Plugin {
         }
 
         //Set the random timeout when nessecery
-        if (treePatch.State != TreePatchState.PROCESS_TREE_PATCH && treePatch.State != TreePatchState.EMPTY_INVENTORY)
+        if (treePatch.State != TreePatchState.PROCESS_TREE_PATCH && treePatch.State != TreePatchState.EMPTY_INVENTORY && treePatch.State != TreePatchState.PAY)
             setTimeout();
     }
 
@@ -599,6 +671,7 @@ public class BobTheFarmerPlugin extends Plugin {
                         MousePackets.queueClickPacket();
                         BankInventoryInteraction.useItem(item, "Deposit-All");
                     }
+                    herbBankState = BankState.WITHDRAW;
                     break;
                 //Withdraw the requierd items in non noted form
                 case WITHDRAW:
@@ -680,6 +753,7 @@ public class BobTheFarmerPlugin extends Plugin {
                                 }
                             }
                         }
+                        herbBankState = BankState.CHECK;
                     }
                     else
                     {
@@ -736,11 +810,23 @@ public class BobTheFarmerPlugin extends Plugin {
                 keepItems.addAll(Arrays.asList(FaladorTreePatch.Tools));
             if (config.enableTreeLumbridge())
                 keepItems.addAll(Arrays.asList(LumbridgeTreePatch.Tools));
+            if (config.enableTreeTaverley())
+                keepItems.addAll(Arrays.asList(TaverleyTreePatch.Tools));
+            if (config.enableTreeVarrock())
+                keepItems.addAll(Arrays.asList(VarrockTreePatch.Tools));
+            if (config.enableTreeFarmingGuild())
+                keepItems.addAll(Arrays.asList(FarmingGuildTreePatch.Tools));
+            if (config.enableTreeGnomeStronghold())
+                keepItems.addAll(Arrays.asList(GnomeStrongholdTreePatch.Tools));
 
             //Count how many saplings are needed
             int patches = 0;
             patches += config.enableTreeFalador() ? 1 : 0;
             patches += config.enableTreeLumbridge() ? 1 : 0;
+            patches += config.enableTreeTaverley() ? 1 : 0;
+            patches += config.enableTreeVarrock() ? 1 : 0;
+            patches += config.enableTreeFarmingGuild() ? 1 : 0;
+            patches += config.enableTreeGnomeStronghold() ? 1 : 0;
 
             //Banking state machine
             switch (treeBankState){
@@ -772,8 +858,8 @@ public class BobTheFarmerPlugin extends Plugin {
                         }
 
                         //Take out coins
-                        if (!TakeOutItemFromBank("Coins", 100000)) {
-                            Stop("Missing 100k in bank you broke fuck");
+                        if (!TakeOutItemFromBank("Coins", 200 * patches)) {
+                            Stop("Missing " + 200 * patches + " coins in bank you broke fuck");
                             return;
                         }
 
@@ -787,15 +873,18 @@ public class BobTheFarmerPlugin extends Plugin {
                         }
 
                         //Take out tools that are needed for the Ardougne herb patch
-                        if (config.enableTreeFalador())
+                        if (config.enableTreeFarmingGuild())
                         {
-                            for (String tool : FaladorTreePatch.Tools)
+                            for (int i = 1; i <= 6; i++)
                             {
-                                if (!TakeOutItemFromBank(tool, 1)) {
-                                    Stop("Missing " + tool + " in bank");
-                                    return;
+                                if (TakeOutItemFromBank("Skills necklace(" + i + ")", 1))
+                                {
+                                    break;
                                 }
+                                if (i == 6)
+                                    Stop("Could not find Skills necklace in bank");
                             }
+
                         }
                         treeBankState = BankState.WITHDRAW_NOTED;
                     }
@@ -895,7 +984,15 @@ public class BobTheFarmerPlugin extends Plugin {
         AtomicBoolean succeeded = new AtomicBoolean(false);
         BankUtil.nameContainsNoCase(item).first().ifPresentOrElse(widget ->
             {
-                int localAmount = amount - Inventory.search().withName(item).result().size();
+                int localAmount = amount -
+                    (
+                        Inventory.search().withName(item).first().isPresent() ?
+                            (
+                                Inventory.search().isStackable(Inventory.search().withName(item).first().get()) ?
+                                Inventory.search().withName(item).first().get().getItemQuantity() :
+                                Inventory.search().withName(item).result().size()
+                            ) : 0
+                    );
 
                 if (amount < 0)
                     localAmount = BankUtil.getItemAmount(widget.getItemId());
@@ -1094,7 +1191,33 @@ public class BobTheFarmerPlugin extends Plugin {
             CatherbyHerbPatch.State = HerbPatchState.PROCESS_HERB_PATCH;
         }
     }
+    //Travels to the Port Phasmatys herb patch
+    private void TravelToPortPhasmatysHerbPatch(HerbPatch state) {
+        PortPhasmatysHerbPatch.State = HerbPatchState.TRAVEL;
+        SetDisplayStateHerb(state);
 
+        if (PortPhasmatysHerbPatch.PathIndex == 0)
+        {
+            Inventory.search().withName("Ectophial").withAction("Empty").first().ifPresent(vial -> {
+                MousePackets.queueClickPacket();
+                InventoryInteraction.useItem(vial, "Empty");
+                PortPhasmatysHerbPatch.PathIndex = 1;
+            });
+        }
+        if (PortPhasmatysHerbPatch.PathIndex == 1)
+        {
+            if (TravelPath(PortPhasmatysHerbPatch.Paths.get("Ectophial")))
+            {
+                PortPhasmatysHerbPatch.PathIndex = 2;
+                setTimeout();
+            }
+            return;
+        }
+        if (PortPhasmatysHerbPatch.PathIndex == 2)
+        {
+            PortPhasmatysHerbPatch.State = HerbPatchState.PROCESS_HERB_PATCH;
+        }
+    }
         //------------------------------------- Trees -------------------------------------
 
     //Travels to the Falador tree patch
@@ -1164,6 +1287,199 @@ public class BobTheFarmerPlugin extends Plugin {
                 LumbridgeTreePatch.State = TreePatchState.PROCESS_TREE_PATCH;
             }
         }
+    //Travels to the Taverly tree patch
+    private void TravelToTaverlyTreePatch(TreePatch state) {
+        TaverleyTreePatch.State = TreePatchState.TRAVEL;
+        SetDisplayStateTree(state);
+
+        if (TaverleyTreePatch.PathIndex == 0)
+        {
+            if (CastTeleportSpell(WidgetInfoExtended.SPELL_FALADOR_TELEPORT))
+            {
+                ResetPath();
+                TaverleyTreePatch.PathIndex = 1;
+                setTimeout();
+            }
+            else
+            {
+                Stop("Couldn't teleport to Falador");
+            }
+            return;
+        }
+        if (TaverleyTreePatch.PathIndex == 1)
+        {
+            if (TravelPath(TaverleyTreePatch.Paths.get("Teleport1")))
+            {
+                TaverleyTreePatch.PathIndex = 2;
+                setTimeout();
+            }
+            return;
+        }
+        if (TaverleyTreePatch.PathIndex == 2)
+        {
+            TileObjects.search()
+                    .nameContains("Gate")
+                    .withAction("Open")
+                    .withinDistance(10)
+                    .nearestToPlayer()
+                    .ifPresent(gate ->{
+                MousePackets.queueClickPacket();
+                TileObjectInteraction.interact(gate, "Open");
+
+            });
+            ResetPath();
+            TaverleyTreePatch.PathIndex = 3;
+            return;
+        }
+        if (TaverleyTreePatch.PathIndex == 3)
+        {
+            if (TravelPath(TaverleyTreePatch.Paths.get("Teleport2")))
+            {
+                TaverleyTreePatch.PathIndex = 4;
+                setTimeout();
+            }
+            return;
+        }
+        if (TaverleyTreePatch.PathIndex == 4)
+        {
+            TaverleyTreePatch.State = TreePatchState.PROCESS_TREE_PATCH;
+        }
+    }
+    //Travels to the Varrock tree patch
+    private void TravelToVarrockTreePatch(TreePatch state) {
+        VarrockTreePatch.State = TreePatchState.TRAVEL;
+        SetDisplayStateTree(state);
+
+        if (VarrockTreePatch.PathIndex == 0)
+        {
+            if (CastTeleportSpell(WidgetInfoExtended.SPELL_VARROCK_TELEPORT))
+            {
+                ResetPath();
+                VarrockTreePatch.PathIndex = 1;
+                setTimeout();
+                return;
+            }
+            else
+            {
+                Stop("Couldn't teleport to Varrock");
+            }
+        }
+        if (VarrockTreePatch.PathIndex == 1)
+        {
+            if (TravelPath(VarrockTreePatch.Paths.get("Teleport")))
+            {
+                VarrockTreePatch.PathIndex = 2;
+                setTimeout();
+            }
+            return;
+        }
+        if (VarrockTreePatch.PathIndex == 2)
+        {
+            VarrockTreePatch.State = TreePatchState.PROCESS_TREE_PATCH;
+        }
+    }
+
+    //Travels to the Gnome Stronghold tree patch
+    private void TravelToGnomeStrongholdTreePatch(TreePatch state) {
+        GnomeStrongholdTreePatch.State = TreePatchState.TRAVEL;
+        SetDisplayStateTree(state);
+
+        if (GnomeStrongholdTreePatch.PathIndex == 0)
+        {
+            if (!config.enableTreeVarrock())
+            {
+                if (CastTeleportSpell(WidgetInfoExtended.SPELL_VARROCK_TELEPORT))
+                {
+                    ResetPath();
+                    GnomeStrongholdTreePatch.PathIndex = 1;
+                    setTimeout();
+                    return;
+                }
+                else
+                {
+                    Stop("Couldn't teleport to Varrock");
+                }
+            }
+            else
+            {
+                ResetPath();
+                GnomeStrongholdTreePatch.PathIndex = 1;
+                setTimeout();
+            }
+        }
+        if (GnomeStrongholdTreePatch.PathIndex == 1)
+        {
+            if (TravelPath(GnomeStrongholdTreePatch.Paths.get("Teleport1")))
+            {
+                GnomeStrongholdTreePatch.PathIndex = 2;
+                setTimeout();
+            }
+            return;
+        }
+        if (GnomeStrongholdTreePatch.PathIndex == 2)
+        {
+            TileObjects.search().withName("Spirit tree").withAction("Travel").nearestToPlayer().ifPresentOrElse(spiritTree -> {
+                Widgets.search().withTextContains("irit Tree Locat").hiddenState(false).first().ifPresentOrElse(travelWidget -> {
+                    Widgets.search().withTextContains("Tree Gnome Village").hiddenState(false).first().ifPresent(tree -> {
+
+                        MousePackets.queueClickPacket();
+                        WidgetPackets.queueResumePause(tree.getId(),1);
+
+                        ResetPath();
+                        GnomeStrongholdTreePatch.PathIndex = 3;
+                        setTimeout();
+                    });
+                }, () -> {
+                    MousePackets.queueClickPacket();
+                    TileObjectInteraction.interact(spiritTree, "Travel");
+                });
+            }, () -> {
+                Stop("Where the fuck is spirit tree?!");
+            });
+            return;
+        }
+        if (GnomeStrongholdTreePatch.PathIndex == 3)
+        {
+            if (TravelPath(GnomeStrongholdTreePatch.Paths.get("Teleport2")))
+            {
+                GnomeStrongholdTreePatch.PathIndex = 4;
+                setTimeout();
+            }
+            return;
+        }
+        if (GnomeStrongholdTreePatch.PathIndex == 4)
+        {
+            GnomeStrongholdTreePatch.State = TreePatchState.PROCESS_TREE_PATCH;
+        }
+    }
+
+    //Travels to the Farming guild tree patch
+    private void TravelToFarmingGuildTreePatch(TreePatch state) {
+        FarmingGuildTreePatch.State = TreePatchState.TRAVEL;
+        SetDisplayStateTree(state);
+
+        if (FarmingGuildTreePatch.PathIndex == 0)
+        {
+            Inventory.search().nameContains("Skills necklace").withAction("Rub").first().ifPresent(necklace -> {
+                Widgets.search().withTextContains("here would you like to").hiddenState(false).first().ifPresentOrElse(menu -> {
+                    Widgets.search().withTextContains("Fishing Guild").hiddenState(false).first().ifPresent(farmingGuild -> {
+                        MousePackets.queueClickPacket();
+                        WidgetPackets.queueResumePause(farmingGuild.getId(), 5);
+                        FarmingGuildTreePatch.PathIndex = 1;
+                    });
+                }, () -> {
+                    MousePackets.queueClickPacket();
+                    InventoryInteraction.useItem(necklace, "Rub");
+                });
+
+            });
+        }
+        if (FarmingGuildTreePatch.PathIndex == 1)
+        {
+            FarmingGuildTreePatch.State = TreePatchState.PROCESS_TREE_PATCH;
+            setTimeout();
+        }
+    }
 
     //------------------------------------- Travel functions -------------------------------------
     private int pathIndex = 0;

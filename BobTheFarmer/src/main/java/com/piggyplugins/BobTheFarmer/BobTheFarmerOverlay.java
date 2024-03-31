@@ -35,7 +35,7 @@ public class BobTheFarmerOverlay extends OverlayPanel {
         panelComponent.getChildren().add(LineComponent.builder()
                 .left("State: ")
                 .leftColor(new Color(255, 157, 249))
-                .right(plugin.state==null || !plugin.started ? "STOPPED" : plugin.state.name())
+                .right(plugin.state==null || !plugin.started ? "STOPPED" : plugin.string_state)
                 .rightColor(Color.WHITE)
                 .build());
         panelComponent.getChildren().add(LineComponent.builder()
