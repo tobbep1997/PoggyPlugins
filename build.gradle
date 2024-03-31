@@ -45,7 +45,6 @@ dependencies {
     implementation project(path: ':BobTheSkiller')
     implementation project(path: ':BobTheThief')
     implementation project(path: ':BobTheWizard')
-    implementation project(path: ':BobTheEnchanter')
     implementation project(path: ':BobTheFarmer')
     implementation project(path: ':ButterflyCatcher')
     implementation project(path: ':DialogueContinuer')

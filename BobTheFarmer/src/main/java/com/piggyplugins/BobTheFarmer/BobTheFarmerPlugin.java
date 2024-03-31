@@ -276,7 +276,7 @@ public class BobTheFarmerPlugin extends Plugin {
 
         //Check if herb patch is ready for planting
         if (TileObjects.search().nameContains("Herb patch").withAction("Inspect").first().isPresent()) {
-            if (Inventory.search().withName(config.seed().SeedName).first().isPresent())
+            if (Inventory.search().withName(config.herb().SeedName).first().isPresent())
                 //Use seed on herb patch
                 return ProcessState.PLANTING;
         }
@@ -322,7 +322,7 @@ public class BobTheFarmerPlugin extends Plugin {
                 break;
             case PLANTING:
                 TileObjects.search().nameContains("Herb patch").withAction("Inspect").first().ifPresent(tileObject -> {
-                    Inventory.search().withName(config.seed().SeedName).first().ifPresent(item -> {
+                    Inventory.search().withName(config.herb().SeedName).first().ifPresent(item -> {
                         //Use seed on herb patch
                         MousePackets.queueClickPacket();
                         MousePackets.queueClickPacket();
@@ -420,14 +420,14 @@ public class BobTheFarmerPlugin extends Plugin {
             }
 
             //Take out seeds
-            if (!TakeOutItemFromBank(config.seed().SeedName, patches)) {
-                Stop("Missing " + config.seed() + " in bank");
+            if (!TakeOutItemFromBank(config.herb().SeedName, patches)) {
+                Stop("Missing " + config.herb() + " in bank");
                 return;
             }
 
             //Take out compost
             if (!TakeOutItemFromBank(config.compost(), patches)) {
-                Stop("Missing " + config.seed() + " in bank");
+                Stop("Missing " + config.herb() + " in bank");
                 return;
             }
 

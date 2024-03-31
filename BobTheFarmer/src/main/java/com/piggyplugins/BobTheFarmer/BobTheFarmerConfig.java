@@ -21,9 +21,17 @@ public interface BobTheFarmerConfig extends Config {
     String herbPatches = "Herb patches";
 
     @ConfigSection(
+            name = "Tree patches",
+            description = "Configuration for tree patches",
+            position = 2
+
+    )
+    String treePatches = "Tree patches";
+
+    @ConfigSection(
             name = "General",
             description = "General configuration",
-            position = 2
+            position = 1
 
     )
     String generalConfiguration = "General configuration";
@@ -68,29 +76,6 @@ public interface BobTheFarmerConfig extends Config {
 
 
     @ConfigItem(
-            keyName = "seed",
-            name = "Seed",
-            description = "",
-            position = 1,
-            section = generalConfiguration
-
-    )
-    default Herb seed() {
-        return Herb.Guam_leaf;
-    }
-
-    @ConfigItem(
-            keyName = "compost",
-            name = "Compost",
-            description = "",
-            position = 1,
-            section = generalConfiguration
-    )
-    default String compost() {
-        return "Ultracompost";
-    }
-
-    @ConfigItem(
             keyName = "additionalItems",
             name = "Additional items",
             description = "",
@@ -100,15 +85,97 @@ public interface BobTheFarmerConfig extends Config {
     default String additionalItems() {
         return "Rune pouch";
     }
+
     @ConfigItem(
             keyName = "debugDisableRestock",
             name = "debugDisableRestock",
             description = "",
-            position = 3,
-            section = generalConfiguration
+            position = -1
     )
     default boolean debugDisableRestock() {
         return false;
+    }
+
+    @ConfigItem(
+            keyName = "tree",
+            name = "Tree",
+            description = "",
+            position = -1,
+            section = treePatches
+
+    )
+    default Tree tree() { return Tree.Oak; }
+    @ConfigItem(
+            keyName = "enableTreeFalador",
+            name = "Falador Tree",
+            description = "",
+            position = 1,
+            section = treePatches
+    )
+    default boolean enableTreeFalador() { return false; }
+    @ConfigItem(
+            keyName = "enableTreeFarmingGuild",
+            name = "Farming Guild Tree",
+            description = "",
+            position = 1,
+            section = treePatches
+    )
+    default boolean enableTreeFarmingGuild() { return false; }
+    @ConfigItem(
+            keyName = "enableTreeLumbridge",
+            name = "Lumbridge Tree",
+            description = "",
+            position = 1,
+            section = treePatches
+    )
+    default boolean enableTreeLumbridge() { return false; }
+    @ConfigItem(
+            keyName = "enableTreeTaverley",
+            name = "Taverley Tree",
+            description = "",
+            position = 1,
+            section = treePatches
+    )
+    default boolean enableTreeTaverley() { return false; }
+    @ConfigItem(
+            keyName = "enableTreeGnomeStronghold",
+            name = "Gnome Stronghold Tree",
+            description = "",
+            position = 1,
+            section = treePatches
+    )
+    default boolean enableTreeGnomeStronghold() { return false; }
+    @ConfigItem(
+            keyName = "enableTreeVarrock",
+            name = "Varrock Tree",
+            description = "",
+            position = 1,
+            section = treePatches
+    )
+    default boolean enableTreeVarrock() { return false; }
+
+
+    @ConfigItem(
+            keyName = "herb",
+            name = "Herb",
+            description = "",
+            position = -1,
+            section = herbPatches
+
+    )
+    default Herb herb() {
+        return Herb.Guam_leaf;
+    }
+
+    @ConfigItem(
+            keyName = "compost",
+            name = "Compost",
+            description = "",
+            position = -1,
+            section = herbPatches
+    )
+    default String compost() {
+        return "Ultracompost";
     }
 
     @ConfigItem(
