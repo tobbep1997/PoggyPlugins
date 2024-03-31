@@ -2,7 +2,7 @@ package com.piggyplugins.BobTheTemplate;
 
 import net.runelite.client.config.*;
 
-@ConfigGroup("BobTheBlower")
+@ConfigGroup("BobTheTemplate")
 public interface BobTheTemplateConfig extends Config {
     @ConfigSection(
             name = "Tick Delays",

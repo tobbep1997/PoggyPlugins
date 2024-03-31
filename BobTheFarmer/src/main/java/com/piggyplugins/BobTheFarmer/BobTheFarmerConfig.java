@@ -2,7 +2,7 @@ package com.piggyplugins.BobTheFarmer;
 
 import net.runelite.client.config.*;
 
-@ConfigGroup("BobTheBlower")
+@ConfigGroup("BobTheFarmer")
 public interface BobTheFarmerConfig extends Config {
     @ConfigSection(
             name = "Tick Delays",
@@ -48,7 +48,7 @@ public interface BobTheFarmerConfig extends Config {
     }
     @ConfigItem(
             keyName = "doTreeRun",
-            name = "Do Herb run",
+            name = "Do Tree run",
             description = "",
             position = 2
     )
