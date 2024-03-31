@@ -28,7 +28,9 @@ public class Paths {
     public static WorldPoint[] PortPhasmatysEctophial = {
             new WorldPoint(3610,3533,0)
     };
-
+    public static WorldPoint[] HosidiusHomeTeleport = {
+            new WorldPoint(1741, 3548,0)
+    };
 
     //TREES
     public static WorldPoint[] FaladorTreeTeleportPath = {

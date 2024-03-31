@@ -165,6 +165,7 @@ public class BobTheFarmerPlugin extends Plugin {
         HarmonyIslandHerbPatch = new HerbPatch("Harmony", new String[] {});
 
         HosidiusHerbPatch = new HerbPatch("Hosidius", new String[] {});
+        HosidiusHerbPatch.SetPath(Paths.HosidiusHomeTeleport, "Home Teleport");
 
         PortPhasmatysHerbPatch = new HerbPatch("Port Phasmatys", new String[] {"Ectophial"});
         PortPhasmatysHerbPatch.SetPath(Paths.PortPhasmatysEctophial, "Ectophial");
@@ -238,6 +239,19 @@ public class BobTheFarmerPlugin extends Plugin {
             case HERB_PORT_PHASMATYS:
                 FarmHerbs(PortPhasmatysHerbPatch);
                 break;
+            case HERB_TRAVEL_HOSIDIUS:
+                TravelToHosidiusHerbPatch(HosidiusHerbPatch);
+                break;
+            case HERB_HOSIDIUS:
+                FarmHerbs(HosidiusHerbPatch);
+                break;
+            case HERB_TRAVEL_FARMING_GUILD:
+                TravelToFarmingGuildHerbPatch(FarmingGuildHerbPatch);
+                break;
+            case HERB_FARMING_GUILD:
+                FarmHerbs(FarmingGuildHerbPatch);
+                break;
+
 
             //TREE
             case RESTOCK_TREE:
@@ -323,6 +337,24 @@ public class BobTheFarmerPlugin extends Plugin {
             if (config.enablePortPhasmatys() && PortPhasmatysHerbPatch.State.Index >= 2 &&
                     PortPhasmatysHerbPatch.State != HerbPatchState.DONE)
                 return State.HERB_PORT_PHASMATYS;
+
+            if (config.enableHosidius() && HosidiusHerbPatch.State.Index < 2)
+                return State.HERB_TRAVEL_HOSIDIUS;
+            if (config.enableHosidius() && HosidiusHerbPatch.State.Index >= 2 &&
+                    HosidiusHerbPatch.State != HerbPatchState.DONE)
+                return State.HERB_HOSIDIUS;
+
+            if (config.enableHosidius() && HosidiusHerbPatch.State.Index < 2)
+                return State.HERB_TRAVEL_HOSIDIUS;
+            if (config.enableHosidius() && HosidiusHerbPatch.State.Index >= 2 &&
+                    HosidiusHerbPatch.State != HerbPatchState.DONE)
+                return State.HERB_HOSIDIUS;
+
+            if (config.enableFarmingGuild() && FarmingGuildHerbPatch.State.Index < 2)
+                return State.HERB_TRAVEL_FARMING_GUILD;
+            if (config.enableFarmingGuild() && FarmingGuildHerbPatch.State.Index >= 2 &&
+                    FarmingGuildHerbPatch.State != HerbPatchState.DONE)
+                return State.HERB_FARMING_GUILD;
             herbRun = false;
         }
 
@@ -763,6 +795,20 @@ public class BobTheFarmerPlugin extends Plugin {
                                 }
                             }
                         }
+                        //Take out tools that are needed for the Ardougne herb patch
+                        if (config.enableFarmingGuild())
+                        {
+                            for (int i = 1; i <= 6; i++)
+                            {
+                                if (TakeOutItemFromBank("Skills necklace(" + i + ")", 1))
+                                {
+                                    break;
+                                }
+                                if (i == 6)
+                                    Stop("Could not find Skills necklace in bank");
+                            }
+
+                        }
                         herbBankState = BankState.CHECK;
                     }
                     else
@@ -1201,6 +1247,7 @@ public class BobTheFarmerPlugin extends Plugin {
             CatherbyHerbPatch.State = HerbPatchState.PROCESS_HERB_PATCH;
         }
     }
+
     //Travels to the Port Phasmatys herb patch
     private void TravelToPortPhasmatysHerbPatch(HerbPatch state) {
         PortPhasmatysHerbPatch.State = HerbPatchState.TRAVEL;
@@ -1226,6 +1273,71 @@ public class BobTheFarmerPlugin extends Plugin {
         if (PortPhasmatysHerbPatch.PathIndex == 2)
         {
             PortPhasmatysHerbPatch.State = HerbPatchState.PROCESS_HERB_PATCH;
+        }
+    }
+
+    //Travels to the Hosidius herb patch
+    private void TravelToHosidiusHerbPatch(HerbPatch state) {
+        HosidiusHerbPatch.State = HerbPatchState.TRAVEL;
+        SetDisplayStateHerb(state);
+
+        if (HosidiusHerbPatch.PathIndex == 0)
+            HosidiusHerbPatch.PathIndex = 10;
+
+        if (HosidiusHerbPatch.PathIndex == 10)
+        {
+            if (CastTeleportSpell(WidgetInfoExtended.SPELL_TELEPORT_TO_HOUSE, "Outside"))
+            {
+                ResetPath();
+                HosidiusHerbPatch.PathIndex = 11;
+                setTimeout();
+                return;
+            }
+            else
+            {
+                Stop("Couldn't teleport to Hosidius");
+            }
+        }
+        if (HosidiusHerbPatch.PathIndex == 11)
+        {
+            if (TravelPath(HosidiusHerbPatch.Paths.get("Home Teleport")))
+            {
+                HosidiusHerbPatch.PathIndex = 12;
+                setTimeout();
+            }
+            return;
+        }
+        if (HosidiusHerbPatch.PathIndex == 12)
+        {
+            HosidiusHerbPatch.State = HerbPatchState.PROCESS_HERB_PATCH;
+        }
+    }
+
+    //Travels to the Farming guild herb patch
+    private void TravelToFarmingGuildHerbPatch(HerbPatch state) {
+        FarmingGuildHerbPatch.State = HerbPatchState.TRAVEL;
+        SetDisplayStateHerb(state);
+
+        if (FarmingGuildHerbPatch.PathIndex == 0)
+        {
+            Inventory.search().nameContains("Skills necklace").withAction("Rub").first().ifPresent(necklace -> {
+                Widgets.search().withTextContains("here would you like to").hiddenState(false).first().ifPresentOrElse(menu -> {
+                    Widgets.search().withTextContains("Fishing Guild").hiddenState(false).first().ifPresent(farmingGuild -> {
+                        MousePackets.queueClickPacket();
+                        WidgetPackets.queueResumePause(farmingGuild.getId(), 5);
+                        FarmingGuildHerbPatch.PathIndex = 1;
+                    });
+                }, () -> {
+                    MousePackets.queueClickPacket();
+                    InventoryInteraction.useItem(necklace, "Rub");
+                });
+
+            });
+        }
+        if (FarmingGuildHerbPatch.PathIndex == 1)
+        {
+            FarmingGuildHerbPatch.State = HerbPatchState.PROCESS_HERB_PATCH;
+            setTimeout();
         }
     }
         //------------------------------------- Trees -------------------------------------
@@ -1529,6 +1641,16 @@ public class BobTheFarmerPlugin extends Plugin {
         if (teleportSpellIcon.isPresent()) {
             MousePackets.queueClickPacket();
             WidgetPackets.queueWidgetAction(teleportSpellIcon.get(), "Cast");
+            return true;
+        }
+        return false;
+    }
+    //Casts a spell and returns true if the spell has been casted
+    private boolean CastTeleportSpell(WidgetInfoExtended spell, String Cast) {
+        Optional<Widget> teleportSpellIcon = Widgets.search().withId(spell.getPackedId()).first();
+        if (teleportSpellIcon.isPresent()) {
+            MousePackets.queueClickPacket();
+            WidgetPackets.queueWidgetAction(teleportSpellIcon.get(), Cast);
             return true;
         }
         return false;
