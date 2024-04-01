@@ -413,12 +413,10 @@ public class BobTheFarmerPlugin extends Plugin {
 
         //Check if inventory is full and note any herbs that are in the invetory
         if (Inventory.full())
-        {
             if (Inventory.search().nameContains("Grimy").withAction("Clean").onlyUnnoted().first().isPresent())
                 return HerbPatchState.MANAGE_INVETORY;
             else
                 Stop("Invetory full");
-        }
 
         //Check if the patch is not fully grown then mark the patch as done
         if (TileObjects.search().withName("Herbs").first().isPresent() && currentState.State != HerbPatchState.PLANTING)
