@@ -99,12 +99,22 @@ public interface BobTheFarmerConfig extends Config {
     @ConfigItem(
             keyName = "tree",
             name = "Tree",
-            description = "",
+            description = "What type of tree do you want to plant",
             position = -1,
             section = treePatches
 
     )
     default Tree tree() { return Tree.Oak; }
+
+    @ConfigItem(
+            keyName = "plantedTree",
+            name = "Planted Tree",
+            description = "What type of tree is planted",
+            position = 0,
+            section = treePatches
+
+    )
+    default Tree plantedTree() { return Tree.Oak; }
     @ConfigItem(
             keyName = "enableTreeFalador",
             name = "Falador Tree",

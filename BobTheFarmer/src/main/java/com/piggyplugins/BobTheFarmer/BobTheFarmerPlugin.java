@@ -537,10 +537,10 @@ public class BobTheFarmerPlugin extends Plugin {
             return TreePatchState.EMPTY_INVENTORY;
 
         //Check health of tree
-        if (TileObjects.search().withName(config.tree().Tree).withAction("Check-health").nearestToPlayer().isPresent())
+        if (TileObjects.search().withName(config.plantedTree().Tree).withAction("Check-health").nearestToPlayer().isPresent())
             return TreePatchState.CHECK_HEALTH;
         //Pay gardener
-        if (TileObjects.search().withName(config.tree().Tree).withAction("Chop down").nearestToPlayer().isPresent())
+        if (TileObjects.search().withName(config.plantedTree().Tree).withAction("Chop down").nearestToPlayer().isPresent())
             return TreePatchState.PAY;
         //Rake patch
         if (TileObjects.search().withName("Tree patch").withAction("Rake").nearestToPlayer().isPresent()){
@@ -551,7 +551,7 @@ public class BobTheFarmerPlugin extends Plugin {
             if (Inventory.search().withName(config.tree().Sapling).first().isPresent())
                 return TreePatchState.PlANT;
         //Pay to protect
-        if (TileObjects.search().withName(config.tree().Tree).withAction("Inspect").nearestToPlayer().isPresent())
+        if (TileObjects.search().nameContains(config.tree().Tree.split(" ")[0]).withAction("Inspect").nearestToPlayer().isPresent())
             return TreePatchState.PROTECT;
 
         //PROCESS_TREE_PATCH is doesen't do anything, it just indicates to the herb state machine that it should start
@@ -572,7 +572,7 @@ public class BobTheFarmerPlugin extends Plugin {
         {
             //Empty the inventory of any weeds
             case EMPTY_INVENTORY: //Check if there is any weeds in the inventory and drop them if there is
-                Inventory.search().nameContains("Weeds").first().ifPresent(weeds -> {
+                Inventory.search().withName("Weeds").first().ifPresent(weeds -> {
                     MousePackets.queueClickPacket();
                     InventoryInteraction.useItem(weeds, "Drop");
                 });
@@ -586,7 +586,7 @@ public class BobTheFarmerPlugin extends Plugin {
                 break;
             //Check the health of the tree
             case CHECK_HEALTH:
-                TileObjects.search().withAction("Check-health").nearestToPlayer().ifPresent(tree -> {
+                TileObjects.search().withName(config.plantedTree().Tree).withAction("Check-health").nearestToPlayer().ifPresent(tree -> {
                     MousePackets.queueClickPacket();
                     TileObjectInteraction.interact(tree, "Check-health");
                 });
@@ -616,7 +616,7 @@ public class BobTheFarmerPlugin extends Plugin {
             //Pay to have the tree protected
             case PROTECT:
                 NPCs.search().withAction("Pay").nearestToPlayer().ifPresent(npc -> {
-                    Widgets.search().withTextContains("Pay one").hiddenState(false).first().ifPresentOrElse(payWidget -> {
+                    Widgets.search().withTextContains("Pay").hiddenState(false).first().ifPresentOrElse(payWidget -> {
                         MousePackets.queueClickPacket();
                         WidgetPackets.queueResumePause(payWidget.getId(), 1);
                         treePatch.State = TreePatchState.DONE;
@@ -956,7 +956,7 @@ public class BobTheFarmerPlugin extends Plugin {
                         if (getWithdrawNotes())
                         {
                             //Take protection items
-                            if (!TakeOutItemFromBank(config.tree().ProtectionItem, patches)) {
+                            if (!TakeOutItemFromBank(config.tree().ProtectionItem, config.tree().AmountOfProtectionItem * patches)) {
                                 Stop("Missing " + config.tree().ProtectionItem + " in bank");
                                 return;
                             }
