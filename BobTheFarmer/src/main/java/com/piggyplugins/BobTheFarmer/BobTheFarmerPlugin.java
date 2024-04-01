@@ -502,7 +502,6 @@ public class BobTheFarmerPlugin extends Plugin {
             //Use compost on the herbs
             case COMPOST:
                 TileObjects.search().nameContains("Herbs").withAction("Inspect").first().ifPresent(tileObject -> {
-                    herbPatch.State = HerbPatchState.COMPOST;
                     Inventory.search().withName(config.compost().Name).first().ifPresent(item -> {
                         MousePackets.queueClickPacket();
                         MousePackets.queueClickPacket();
@@ -522,14 +521,15 @@ public class BobTheFarmerPlugin extends Plugin {
                 break;
             //Note herbs on Tool Leprechaun
             case NOTE:
-                Inventory.search().nameContains("Grimy").withAction("Clean").onlyUnnoted().first().ifPresent(herbs -> {
+                Inventory.search().nameContains("Grimy").withAction("Clean").onlyUnnoted().first().ifPresentOrElse(herbs -> {
                     NPCs.search().nameContains("Tool").nearestToPlayer().ifPresent(leprechaun -> {
                         MousePackets.queueClickPacket();
                         NPCPackets.queueWidgetOnNPC(leprechaun, herbs);
                     });
+                }, () -> {
+                    //After noting set the patch to done
+                    herbPatch.State = HerbPatchState.DONE;
                 });
-                //After noting set the patch to done
-                herbPatch.State = HerbPatchState.DONE;
                 break;
             case MANAGE_INVETORY:
                 Inventory.search().nameContains("Grimy").withAction("Clean").onlyUnnoted().first().ifPresent(herbs -> {
@@ -553,10 +553,10 @@ public class BobTheFarmerPlugin extends Plugin {
             return TreePatchState.EMPTY_INVENTORY;
 
         //Check health of tree
-        if (TileObjects.search().withName(config.plantedTree().Tree).withAction("Check-health").nearestToPlayer().isPresent())
+        if (TileObjects.search().withName(config.plantedTree().Tree).withAction("Check-health").withinDistance(10).nearestToPlayer().isPresent())
             return TreePatchState.CHECK_HEALTH;
         //Pay gardener
-        if (TileObjects.search().withName(config.plantedTree().Tree).withAction("Chop down").nearestToPlayer().isPresent())
+        if (TileObjects.search().withName(config.plantedTree().Tree).withAction("Chop down").withinDistance(5).nearestToPlayer().isPresent())
             return TreePatchState.PAY;
         //Rake patch
         if (TileObjects.search().withName("Tree patch").withAction("Rake").nearestToPlayer().isPresent()){
@@ -1157,7 +1157,7 @@ public class BobTheFarmerPlugin extends Plugin {
                 }
             }
             FaladorHerbPatch.PathIndex = 1;
-            timeout = 8;
+            timeout = 4;
             return;
         }
         if (FaladorHerbPatch.PathIndex == 1)

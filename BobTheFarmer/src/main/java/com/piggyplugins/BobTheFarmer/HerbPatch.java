@@ -11,7 +11,7 @@ public class HerbPatch
 {
     public String Name = "";
     public String[] Tools = {};
-    public HerbPatchState State = HerbPatchState.NOT_STARTED;
+    public HerbPatchState State;
     public Dictionary<String, WorldPoint[]> Paths = new Hashtable<>();
     public int PathIndex = 0;
 
@@ -19,6 +19,7 @@ public class HerbPatch
     {
         this.Name = name;
         this.Tools = tools;
+        this.State = HerbPatchState.NOT_STARTED;
         this.PathIndex = 0;
     }
     public void SetPath(WorldPoint[] path, String key)
