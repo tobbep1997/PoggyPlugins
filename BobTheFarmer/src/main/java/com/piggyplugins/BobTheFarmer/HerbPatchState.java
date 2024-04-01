@@ -13,6 +13,7 @@ public enum HerbPatchState
     COMPOST(7),
     EMPTY_INVENTORY(8),
     NOTE(9),
+    MANAGE_INVETORY(9),
     DONE(10);
 
     public final int Index;

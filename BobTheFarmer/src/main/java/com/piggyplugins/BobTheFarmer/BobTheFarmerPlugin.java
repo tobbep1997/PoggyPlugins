@@ -411,6 +411,15 @@ public class BobTheFarmerPlugin extends Plugin {
         if (Inventory.search().withName("Weeds").first().isPresent())
             return HerbPatchState.EMPTY_INVENTORY;
 
+        //Check if inventory is full and note any herbs that are in the invetory
+        if (Inventory.full())
+        {
+            if (Inventory.search().nameContains("Grimy").withAction("Clean").onlyUnnoted().first().isPresent())
+                return HerbPatchState.MANAGE_INVETORY;
+            else
+                Stop("Invetory full");
+        }
+
         //Check if the patch is not fully grown then mark the patch as done
         if (TileObjects.search().withName("Herbs").first().isPresent() && currentState.State != HerbPatchState.PLANTING)
             if (!Arrays.asList(TileObjectQuery.getObjectComposition(TileObjects.search().withName("Herbs").first().get()).getActions()).contains("Pick"))
@@ -444,6 +453,7 @@ public class BobTheFarmerPlugin extends Plugin {
         //PROCESS_HERB_PATCH is doesen't do anything, it just indicates to the herb state machine that it should start
         return HerbPatchState.PROCESS_HERB_PATCH;
     }
+
     //Execute herb state machine
     private void FarmHerbs(HerbPatch herbPatch) {
         if (herbPatch.State.Index < 2 || herbPatch.State == HerbPatchState.DONE)
@@ -523,6 +533,15 @@ public class BobTheFarmerPlugin extends Plugin {
                 //After noting set the patch to done
                 herbPatch.State = HerbPatchState.DONE;
                 break;
+            case MANAGE_INVETORY:
+                Inventory.search().nameContains("Grimy").withAction("Clean").onlyUnnoted().first().ifPresent(herbs -> {
+                    NPCs.search().nameContains("Tool").nearestToPlayer().ifPresent(leprechaun -> {
+                        MousePackets.queueClickPacket();
+                        NPCPackets.queueWidgetOnNPC(leprechaun, herbs);
+                    });
+                });
+                break;
+
         }
         //Set the random timeout when nessecery
         if (herbPatch.State != HerbPatchState.PROCESS_HERB_PATCH && herbPatch.State != HerbPatchState.EMPTY_INVENTORY)
@@ -556,6 +575,8 @@ public class BobTheFarmerPlugin extends Plugin {
         //PROCESS_TREE_PATCH is doesen't do anything, it just indicates to the herb state machine that it should start
         return TreePatchState.PROCESS_TREE_PATCH;
     }
+
+    //Execute tree state machine
     private void FarmTrees(TreePatch treePatch) {
         if (treePatch.State.Index < 2 || treePatch.State == TreePatchState.DONE)
             return;
@@ -1072,7 +1093,6 @@ public class BobTheFarmerPlugin extends Plugin {
 
     //------------------------------------- Travel -------------------------------------
         //------------------------------------- Herbs -------------------------------------
-
     //Travels to the Ardougne herb patch
     private void TravelToArdougneHerbPatch(HerbPatch state) {
         ArdougneHerbPatch.State = HerbPatchState.TRAVEL;
@@ -1257,8 +1277,13 @@ public class BobTheFarmerPlugin extends Plugin {
             Inventory.search().withName("Ectophial").withAction("Empty").first().ifPresent(vial -> {
                 MousePackets.queueClickPacket();
                 InventoryInteraction.useItem(vial, "Empty");
+
+                ResetPath();
                 PortPhasmatysHerbPatch.PathIndex = 1;
+                setTimeout();
             });
+
+            return;
         }
         if (PortPhasmatysHerbPatch.PathIndex == 1)
         {
@@ -1408,6 +1433,7 @@ public class BobTheFarmerPlugin extends Plugin {
                 LumbridgeTreePatch.State = TreePatchState.PROCESS_TREE_PATCH;
             }
         }
+
     //Travels to the Taverly tree patch
     private void TravelToTaverlyTreePatch(TreePatch state) {
         TaverleyTreePatch.State = TreePatchState.TRAVEL;
@@ -1466,6 +1492,7 @@ public class BobTheFarmerPlugin extends Plugin {
             TaverleyTreePatch.State = TreePatchState.PROCESS_TREE_PATCH;
         }
     }
+
     //Travels to the Varrock tree patch
     private void TravelToVarrockTreePatch(TreePatch state) {
         VarrockTreePatch.State = TreePatchState.TRAVEL;
@@ -1644,6 +1671,7 @@ public class BobTheFarmerPlugin extends Plugin {
         }
         return false;
     }
+
     //Casts a spell and returns true if the spell has been casted
     private boolean CastTeleportSpell(WidgetInfoExtended spell, String Cast) {
         Optional<Widget> teleportSpellIcon = Widgets.search().withId(spell.getPackedId()).first();
