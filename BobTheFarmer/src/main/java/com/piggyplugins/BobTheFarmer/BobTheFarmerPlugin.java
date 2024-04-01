@@ -6,7 +6,6 @@ import com.example.EthanApiPlugin.EthanApiPlugin;
 import com.example.InteractionApi.*;
 import com.example.PacketUtils.WidgetInfoExtended;
 import com.example.Packets.*;
-import com.google.errorprone.annotations.Var;
 import com.google.inject.Provides;
 import com.piggyplugins.PiggyUtils.API.BankUtil;
 import net.runelite.api.*;
@@ -549,7 +548,7 @@ public class BobTheFarmerPlugin extends Plugin {
         //Plant sapling
         if (TileObjects.search().withName("Tree patch").withAction("Inspect").nearestToPlayer().isPresent())
             if (Inventory.search().withName(config.tree().Sapling).first().isPresent())
-                return TreePatchState.PlANT;
+                return TreePatchState.PLANT;
         //Pay to protect
         if (TileObjects.search().nameContains(config.tree().Tree.split(" ")[0]).withAction("Inspect").nearestToPlayer().isPresent())
             return TreePatchState.PROTECT;
@@ -604,7 +603,7 @@ public class BobTheFarmerPlugin extends Plugin {
                 });
                 break;
             //Plant a new sapling
-            case PlANT:
+            case PLANT:
                 TileObjects.search().withName("Tree patch").withAction("Inspect").nearestToPlayer().ifPresent(patch -> {
                     Inventory.search().nameContains(config.tree().Sapling).first().ifPresent(item -> {
                         MousePackets.queueClickPacket();

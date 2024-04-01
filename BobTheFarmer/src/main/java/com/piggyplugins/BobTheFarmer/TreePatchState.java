@@ -9,7 +9,7 @@ public enum TreePatchState {
     PAY(4),
 
     RAKE(5),
-    PlANT(6),
+    PLANT(6),
     PROTECT(7),
     EMPTY_INVENTORY(8),
     DONE(9);
