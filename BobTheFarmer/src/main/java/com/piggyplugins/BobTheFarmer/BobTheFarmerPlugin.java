@@ -569,12 +569,24 @@ public class BobTheFarmerPlugin extends Plugin {
 
                 break;
             case MANAGE_INVETORY:
-                Inventory.search().nameContains(config.herb().HerbName).onlyUnnoted().first().ifPresent(herbs -> {
-                    NPCs.search().nameContains("Tool").nearestToPlayer().ifPresent(leprechaun -> {
-                        MousePackets.queueClickPacket();
-                        NPCPackets.queueWidgetOnNPC(leprechaun, herbs);
+                if (config.cleanHerbs())
+                {
+                    Inventory.search().withName(config.herb().HerbName).onlyUnnoted().first().ifPresent(herbs -> {
+                        NPCs.search().nameContains("Tool").nearestToPlayer().ifPresent(leprechaun -> {
+                            MousePackets.queueClickPacket();
+                            NPCPackets.queueWidgetOnNPC(leprechaun, herbs);
+                        });
                     });
-                });
+                }
+                else
+                {
+                    Inventory.search().nameContains("Grimy").withAction("Clean").onlyUnnoted().first().ifPresent(herbs -> {
+                        NPCs.search().nameContains("Tool").nearestToPlayer().ifPresent(leprechaun -> {
+                            MousePackets.queueClickPacket();
+                            NPCPackets.queueWidgetOnNPC(leprechaun, herbs);
+                        });
+                    });
+                }
                 break;
 
         }
