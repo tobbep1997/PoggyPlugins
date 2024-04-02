@@ -183,6 +183,10 @@ public class BobTheHunterPlugin extends Plugin {
         {
             return State.FAILED_TRAPS;
         }
+        if (takeBreak && activeTraps <= 0 && !playerAtStartTile())
+        {
+            return State.WAIT;
+        }
         if (takeBreak && activeTraps <= 0) {
             return State.HANDLE_BREAK;
         }
@@ -270,6 +274,11 @@ public class BobTheHunterPlugin extends Plugin {
     private boolean playerAtTarget()
     {
         return client.getLocalPlayer().getWorldLocation().getX() == targetTile.getX() && client.getLocalPlayer().getWorldLocation().getY() == targetTile.getY();
+    }
+
+    private boolean playerAtStartTile()
+    {
+        return client.getLocalPlayer().getWorldLocation().getX() == startTile.getX() && client.getLocalPlayer().getWorldLocation().getY() == startTile.getY();
     }
 
     private void moveToTargetTile()
@@ -387,7 +396,7 @@ public class BobTheHunterPlugin extends Plugin {
 
     private void playerWait()
     {
-        if (client.getLocalPlayer().getWorldLocation().getX() != startTile.getX() || client.getLocalPlayer().getWorldLocation().getY() != startTile.getY())
+        if (!playerAtStartTile())
         {
             MousePackets.queueClickPacket();
             MovementPackets.queueMovement(startTile);
