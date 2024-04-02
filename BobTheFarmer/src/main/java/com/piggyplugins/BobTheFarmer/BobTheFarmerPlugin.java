@@ -176,23 +176,23 @@ public class BobTheFarmerPlugin extends Plugin {
     }
     //Resets all tree run data to its default state
     private void ResetTreePatchStates() {
-        FaladorTreePatch = new TreePatch("Falador", "", new String[] {});
+        FaladorTreePatch = new TreePatch("Falador", new WorldArea(3002,3371,4,4,0), new String[] {});
         FaladorTreePatch.SetPath(Paths.FaladorTreeTeleportPath, "Teleport");
 
-        FarmingGuildTreePatch = new TreePatch("Farming Guild", "", new String[] {});
+        FarmingGuildTreePatch = new TreePatch("Farming Guild", new WorldArea(1230,3734,4,4,0), new String[] {});
 
-        LumbridgeTreePatch = new TreePatch("Lumbridge", "", new String[] {});
+        LumbridgeTreePatch = new TreePatch("Lumbridge", new WorldArea(3191,3229,4,4,0), new String[] {});
         LumbridgeTreePatch.SetPath(Paths.LumbridgeTreeTeleportPath, "Teleport");
 
-        TaverleyTreePatch = new TreePatch("Taverley", "", new String[] {});
+        TaverleyTreePatch = new TreePatch("Taverley", new WorldArea(2934,3436,4,4,0), new String[] {});
         TaverleyTreePatch.SetPath(Paths.TaverleyTreeTeleportPath1, "Teleport1");
         TaverleyTreePatch.SetPath(Paths.TaverleyTreeTeleportPath2, "Teleport2");
 
-        GnomeStrongholdTreePatch = new TreePatch("Gnome Strongold", "", new String[] {});
+        GnomeStrongholdTreePatch = new TreePatch("Gnome Strongold", new WorldArea(2434,3413,4,4,0), new String[] {});
         GnomeStrongholdTreePatch.SetPath(Paths.GnomeStrongholdTreeTeleportPath1, "Teleport1");
         GnomeStrongholdTreePatch.SetPath(Paths.GnomeStrongholdTreeTeleportPath2, "Teleport2");
 
-        VarrockTreePatch = new TreePatch("Varrock", "", new String[] {});
+        VarrockTreePatch = new TreePatch("Varrock", new WorldArea(3227,3457,4,4,0), new String[] {});
         VarrockTreePatch.SetPath(Paths.VarrockTreeTeleportPath, "Teleport");
     }
 
@@ -314,45 +314,45 @@ public class BobTheFarmerPlugin extends Plugin {
             if (herbBankState != BankState.DONE && !config.debugDisableRestock())
                 return State.RESTOCK_HERB;
 
-            if (config.enableArdougne() && ArdougneHerbPatch.State.Index < 2)
+            if (config.enableArdougne() && ArdougneHerbPatch.State.Index < 2 && !config.debugStateMachine())
                 return State.HERB_TRAVEL_ARDOUGNE;
-            if (config.enableArdougne() && ArdougneHerbPatch.State.Index >= 2 &&
+            if (config.enableArdougne() && (ArdougneHerbPatch.State.Index >= 2 || config.debugStateMachine())  &&
                     ArdougneHerbPatch.State != HerbPatchState.DONE)
                 return State.HERB_ARDOUGNE;
 
-            if (config.enableCatherby() && CatherbyHerbPatch.State.Index < 2)
+            if (config.enableCatherby() && CatherbyHerbPatch.State.Index < 2 && !config.debugStateMachine())
                 return State.HERB_TRAVEL_CATHERBY;
-            if (config.enableCatherby() && CatherbyHerbPatch.State.Index >= 2 &&
+            if (config.enableCatherby() && (CatherbyHerbPatch.State.Index >= 2 || config.debugStateMachine()) &&
                     CatherbyHerbPatch.State != HerbPatchState.DONE)
                 return State.HERB_CATHERBY;
 
-            if (config.enableFalador() && FaladorHerbPatch.State.Index < 2)
+            if (config.enableFalador() && FaladorHerbPatch.State.Index < 2 && !config.debugStateMachine())
                 return State.HERB_TRAVEL_FALADOR;
-            if (config.enableFalador() && FaladorHerbPatch.State.Index >= 2 &&
+            if (config.enableFalador() && (FaladorHerbPatch.State.Index >= 2 || config.debugStateMachine()) &&
                     FaladorHerbPatch.State != HerbPatchState.DONE)
                 return State.HERB_FALADOR;
 
-            if (config.enablePortPhasmatys() && PortPhasmatysHerbPatch.State.Index < 2)
+            if (config.enablePortPhasmatys() && PortPhasmatysHerbPatch.State.Index < 2 && !config.debugStateMachine())
                 return State.HERB_TRAVEL_PORT_PHASMATYS;
-            if (config.enablePortPhasmatys() && PortPhasmatysHerbPatch.State.Index >= 2 &&
+            if (config.enablePortPhasmatys() && (PortPhasmatysHerbPatch.State.Index >= 2 || config.debugStateMachine()) &&
                     PortPhasmatysHerbPatch.State != HerbPatchState.DONE)
                 return State.HERB_PORT_PHASMATYS;
 
-            if (config.enableHosidius() && HosidiusHerbPatch.State.Index < 2)
+            if (config.enableHosidius() && HosidiusHerbPatch.State.Index < 2 && !config.debugStateMachine())
                 return State.HERB_TRAVEL_HOSIDIUS;
-            if (config.enableHosidius() && HosidiusHerbPatch.State.Index >= 2 &&
+            if (config.enableHosidius() && (HosidiusHerbPatch.State.Index >= 2 || config.debugStateMachine()) &&
                     HosidiusHerbPatch.State != HerbPatchState.DONE)
                 return State.HERB_HOSIDIUS;
 
-            if (config.enableHosidius() && HosidiusHerbPatch.State.Index < 2)
+            if (config.enableHosidius() && HosidiusHerbPatch.State.Index < 2 && !config.debugStateMachine())
                 return State.HERB_TRAVEL_HOSIDIUS;
-            if (config.enableHosidius() && HosidiusHerbPatch.State.Index >= 2 &&
+            if (config.enableHosidius() && (HosidiusHerbPatch.State.Index >= 2 || config.debugStateMachine()) &&
                     HosidiusHerbPatch.State != HerbPatchState.DONE)
                 return State.HERB_HOSIDIUS;
 
-            if (config.enableFarmingGuild() && FarmingGuildHerbPatch.State.Index < 2)
+            if (config.enableFarmingGuild() && FarmingGuildHerbPatch.State.Index < 2 && !config.debugStateMachine())
                 return State.HERB_TRAVEL_FARMING_GUILD;
-            if (config.enableFarmingGuild() && FarmingGuildHerbPatch.State.Index >= 2 &&
+            if (config.enableFarmingGuild() && (FarmingGuildHerbPatch.State.Index >= 2 || config.debugStateMachine()) &&
                     FarmingGuildHerbPatch.State != HerbPatchState.DONE)
                 return State.HERB_FARMING_GUILD;
             herbRun = false;
@@ -364,39 +364,39 @@ public class BobTheFarmerPlugin extends Plugin {
             if (treeBankState != BankState.DONE && !config.debugDisableRestock())
                 return State.RESTOCK_TREE;
 
-            if (config.enableTreeFalador() && FaladorTreePatch.State.Index < 2)
+            if (config.enableTreeFalador() && FaladorTreePatch.State.Index < 2 && !config.debugStateMachine())
                 return State.TREE_TRAVEL_FALADOR;
-            if (config.enableTreeFalador() && FaladorTreePatch.State.Index >= 2 &&
+            if (config.enableTreeFalador() && (FaladorTreePatch.State.Index >= 2 || config.debugStateMachine()) &&
                     FaladorTreePatch.State != TreePatchState.DONE)
                 return State.TREE_FALADOR;
 
-            if (config.enableTreeTaverley() && TaverleyTreePatch.State.Index < 2)
+            if (config.enableTreeTaverley() && TaverleyTreePatch.State.Index < 2 && !config.debugStateMachine())
                 return State.TREE_TRAVEL_TAVERLEY;
-            if (config.enableTreeTaverley() && TaverleyTreePatch.State.Index >= 2 &&
+            if (config.enableTreeTaverley() && (TaverleyTreePatch.State.Index >= 2 || config.debugStateMachine()) &&
                     TaverleyTreePatch.State != TreePatchState.DONE)
                 return State.TREE_TAVERLEY;
 
-            if (config.enableTreeLumbridge() && LumbridgeTreePatch.State.Index < 2)
+            if (config.enableTreeLumbridge() && LumbridgeTreePatch.State.Index < 2 && !config.debugStateMachine())
                 return State.TREE_TRAVEL_LUMBRIDGE;
-            if (config.enableTreeLumbridge() && LumbridgeTreePatch.State.Index >= 2 &&
+            if (config.enableTreeLumbridge() && (LumbridgeTreePatch.State.Index >= 2 || config.debugStateMachine()) &&
                     LumbridgeTreePatch.State != TreePatchState.DONE)
                 return State.TREE_LUMBRIDGE;
 
-            if (config.enableTreeVarrock() && VarrockTreePatch.State.Index < 2)
+            if (config.enableTreeVarrock() && VarrockTreePatch.State.Index < 2 && !config.debugStateMachine())
                 return State.TREE_TRAVEL_VARROCK;
-            if (config.enableTreeVarrock() && VarrockTreePatch.State.Index >= 2 &&
+            if (config.enableTreeVarrock() && (VarrockTreePatch.State.Index >= 2 || config.debugStateMachine()) &&
                     VarrockTreePatch.State != TreePatchState.DONE)
                 return State.TREE_VARROCK;
 
-            if (config.enableTreeGnomeStronghold() && GnomeStrongholdTreePatch.State.Index < 2)
+            if (config.enableTreeGnomeStronghold() && GnomeStrongholdTreePatch.State.Index < 2 && !config.debugStateMachine())
                 return State.TREE_TRAVEL_GNOME_STRONGHOLD;
-            if (config.enableTreeGnomeStronghold() && GnomeStrongholdTreePatch.State.Index >= 2 &&
+            if (config.enableTreeGnomeStronghold() && (GnomeStrongholdTreePatch.State.Index >= 2 || config.debugStateMachine()) &&
                     GnomeStrongholdTreePatch.State != TreePatchState.DONE)
                 return State.TREE_GNOME_STRONGHOLD;
 
-            if (config.enableTreeFarmingGuild() && FarmingGuildTreePatch.State.Index < 2)
+            if (config.enableTreeFarmingGuild() && FarmingGuildTreePatch.State.Index < 2 && !config.debugStateMachine())
                 return State.TREE_TRAVEL_FARMING_GUILD;
-            if (config.enableTreeFarmingGuild() && FarmingGuildTreePatch.State.Index >= 2 &&
+            if (config.enableTreeFarmingGuild() && (FarmingGuildTreePatch.State.Index >= 2 || config.debugStateMachine()) &&
                     FarmingGuildTreePatch.State != TreePatchState.DONE)
                 return State.TREE_FARMING_GUILD;
 
@@ -407,7 +407,7 @@ public class BobTheFarmerPlugin extends Plugin {
 
     //------------------------------------- Herbs -------------------------------------
     //Get the next herb step for the herb state machine
-    private HerbPatchState FarmHerbsState(HerbPatch currentState) {
+    private HerbPatchState FarmHerbsState(HerbPatch herbPatch) {
         //Check if there is any weeds in the inventory and drop them if there is
         if (Inventory.search().withName("Weeds").first().isPresent())
             return HerbPatchState.EMPTY_INVENTORY;
@@ -420,7 +420,7 @@ public class BobTheFarmerPlugin extends Plugin {
                 Stop("Invetory full");
 
         //Check if the patch is not fully grown then mark the patch as done
-        if (TileObjects.search().withName("Herbs").first().isPresent() && currentState.State != HerbPatchState.PLANTING)
+        if (TileObjects.search().withName("Herbs").first().isPresent() && herbPatch.State != HerbPatchState.PLANTING)
             if (!Arrays.asList(TileObjectQuery.getObjectComposition(TileObjects.search().withName("Herbs").first().get()).getActions()).contains("Pick"))
                 return HerbPatchState.NOTE;
 
@@ -455,6 +455,9 @@ public class BobTheFarmerPlugin extends Plugin {
 
     //Execute herb state machine
     private void FarmHerbs(HerbPatch herbPatch) {
+        if (config.debugStateMachine() && herbPatch.State.Index < 2)
+            herbPatch.State = HerbPatchState.PROCESS_HERB_PATCH;
+
         if (herbPatch.State.Index < 2 || herbPatch.State == HerbPatchState.DONE)
             return;
 
@@ -464,6 +467,9 @@ public class BobTheFarmerPlugin extends Plugin {
 
         //Set the display variable so the user can see whats going on
         SetDisplayStateHerb(herbPatch);
+
+        if (config.debugStateMachine())
+            return;
 
         //Herb state machine
         switch (herbPatch.State)
@@ -549,15 +555,15 @@ public class BobTheFarmerPlugin extends Plugin {
 
     //------------------------------------- Trees -------------------------------------
     //Get the next tree step for the herb state machine
-    private TreePatchState FarmTreeState(TreePatch currentState){
+    private TreePatchState FarmTreeState(TreePatch treePatch, WorldPoint min, WorldPoint max){
         if (Inventory.search().withName("Weeds").first().isPresent())
             return TreePatchState.EMPTY_INVENTORY;
 
         //Check health of tree
-        if (TileObjects.search().withName(config.plantedTree().Tree).withAction("Check-health").withinDistance(10).nearestToPlayer().isPresent())
+        if (TileObjects.search().withinBounds(min, max).withAction("Check-health").nearestToPlayer().isPresent())
             return TreePatchState.CHECK_HEALTH;
         //Pay gardener
-        if (TileObjects.search().withName(config.plantedTree().Tree).withAction("Chop down").withinDistance(5).nearestToPlayer().isPresent())
+        if (TileObjects.search().withinBounds(min, max).withAction("Chop down").nearestToPlayer().isPresent())
             return TreePatchState.PAY;
         //Rake patch
         if (TileObjects.search().withName("Tree patch").withAction("Rake").nearestToPlayer().isPresent()){
@@ -568,7 +574,7 @@ public class BobTheFarmerPlugin extends Plugin {
             if (Inventory.search().withName(config.tree().Sapling).first().isPresent())
                 return TreePatchState.PLANT;
         //Pay to protect
-        if (TileObjects.search().nameContains(config.tree().Tree.split(" ")[0]).withAction("Inspect").nearestToPlayer().isPresent())
+        if (TileObjects.search().withinBounds(min, max).nameContains("tree").withAction("Inspect").nearestToPlayer().isPresent())
             return TreePatchState.PROTECT;
 
         //PROCESS_TREE_PATCH is doesen't do anything, it just indicates to the herb state machine that it should start
@@ -577,14 +583,31 @@ public class BobTheFarmerPlugin extends Plugin {
 
     //Execute tree state machine
     private void FarmTrees(TreePatch treePatch) {
+        if (config.debugStateMachine() && treePatch.State.Index < 2)
+            treePatch.State = TreePatchState.PROCESS_TREE_PATCH;
+
         if (treePatch.State.Index < 2 || treePatch.State == TreePatchState.DONE)
             return;
 
+        WorldPoint min = new WorldPoint(
+                treePatch.TreePatchArea.getX(),
+                treePatch.TreePatchArea.getY(),
+                treePatch.TreePatchArea.getPlane());
+
+        WorldPoint max = new WorldPoint(
+                treePatch.TreePatchArea.getX() + treePatch.TreePatchArea.getWidth(),
+                treePatch.TreePatchArea.getY() + treePatch.TreePatchArea.getHeight(),
+                treePatch.TreePatchArea.getPlane());
+
         //Get the next state
-        treePatch.State = FarmTreeState(treePatch);
+        treePatch.State = FarmTreeState(treePatch, min, max);
         string_state = treePatch.State.name();
+
         //Set the display variable so the user can see whats going on
         SetDisplayStateTree(treePatch);
+
+        if (config.debugStateMachine())
+            return;
 
         //Tree state machine
         switch (treePatch.State)
@@ -605,7 +628,16 @@ public class BobTheFarmerPlugin extends Plugin {
                 break;
             //Check the health of the tree
             case CHECK_HEALTH:
-                TileObjects.search().withName(config.plantedTree().Tree).withAction("Check-health").nearestToPlayer().ifPresent(tree -> {
+                TileObjects.search().withinBounds(
+                        new WorldPoint(
+                                treePatch.TreePatchArea.getX(),
+                                treePatch.TreePatchArea.getY(),
+                                treePatch.TreePatchArea.getPlane()),
+                        new WorldPoint(
+                                treePatch.TreePatchArea.getX() + treePatch.TreePatchArea.getWidth(),
+                                treePatch.TreePatchArea.getY() + treePatch.TreePatchArea.getHeight(),
+                                treePatch.TreePatchArea.getPlane())
+                ).withAction("Check-health").nearestToPlayer().ifPresent(tree -> {
                     MousePackets.queueClickPacket();
                     TileObjectInteraction.interact(tree, "Check-health");
                 });

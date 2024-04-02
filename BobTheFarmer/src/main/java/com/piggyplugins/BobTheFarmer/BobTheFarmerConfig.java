@@ -94,6 +94,15 @@ public interface BobTheFarmerConfig extends Config {
     default boolean debugDisableRestock() {
         return false;
     }
+    @ConfigItem(
+            keyName = "debugStateMachine",
+            name = "debugStateMachine",
+            description = "",
+            position = -1
+    )
+    default boolean debugStateMachine() {
+        return false;
+    }
 
     //------------------------------------- Tree run configuration -------------------------------------
     @ConfigItem(
@@ -106,15 +115,6 @@ public interface BobTheFarmerConfig extends Config {
     )
     default Tree tree() { return Tree.Oak; }
 
-    @ConfigItem(
-            keyName = "plantedTree",
-            name = "Planted Tree",
-            description = "What type of tree is planted",
-            position = 0,
-            section = treePatches
-
-    )
-    default Tree plantedTree() { return Tree.Oak; }
     @ConfigItem(
             keyName = "enableTreeFalador",
             name = "Falador Tree",
