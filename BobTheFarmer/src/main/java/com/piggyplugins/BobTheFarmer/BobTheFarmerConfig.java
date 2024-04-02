@@ -169,7 +169,7 @@ public interface BobTheFarmerConfig extends Config {
             keyName = "herb",
             name = "Herb",
             description = "",
-            position = -1,
+            position = -4,
             section = herbPatches
 
     )
@@ -180,11 +180,35 @@ public interface BobTheFarmerConfig extends Config {
             keyName = "compost",
             name = "Compost",
             description = "",
-            position = -1,
+            position = -4,
             section = herbPatches
     )
     default Compost_Type compost() {
         return Compost_Type.Ultracompost;
+    }
+    @ConfigItem(
+            keyName = "cleanHerbs",
+            name = "Clean herbs",
+            description = "",
+            position = -3,
+            section = herbPatches
+    )
+    default boolean cleanHerbs() {
+        return false;
+    }
+    @Range(
+            min = 0,
+            max = 10
+    )
+    @ConfigItem(
+            keyName = "cleanHerbsTick",
+            name = "Clean herbs per tick",
+            description = "",
+            position = -3,
+            section = herbPatches
+    )
+    default int cleanHerbsTick() {
+        return 2;
     }
     @ConfigItem(
             name = "Ardougne herb patch",

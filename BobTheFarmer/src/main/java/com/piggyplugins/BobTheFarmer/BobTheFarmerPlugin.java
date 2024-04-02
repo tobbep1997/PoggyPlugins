@@ -414,10 +414,14 @@ public class BobTheFarmerPlugin extends Plugin {
 
         //Check if inventory is full and note any herbs that are in the invetory
         if (Inventory.full())
-            if (Inventory.search().nameContains("Grimy").withAction("Clean").onlyUnnoted().first().isPresent())
+        {
+            if (Inventory.search().withAction("Clean").onlyUnnoted().first().isPresent() && config.cleanHerbs())
+                return HerbPatchState.CLEAN_HERBS;
+            if (Inventory.search().nameContains(config.herb().HerbName).onlyUnnoted().first().isPresent())
                 return HerbPatchState.MANAGE_INVETORY;
             else
                 Stop("Invetory full");
+        }
 
         //Check if the patch is not fully grown then mark the patch as done
         if (TileObjects.search().withName("Herbs").first().isPresent() && herbPatch.State != HerbPatchState.PLANTING)
@@ -427,6 +431,9 @@ public class BobTheFarmerPlugin extends Plugin {
         //Harvest herbs if there is any
         if (TileObjects.search().withName("Herbs").withAction("Pick").first().isPresent())
             return HerbPatchState.HARVEST;
+
+        if (Inventory.search().withAction("Clean").onlyUnnoted().first().isPresent() && config.cleanHerbs())
+            return HerbPatchState.CLEAN_HERBS;
 
         //Clear dead herbs
         if (TileObjects.search().withName("Dead herbs").withAction("Clear").first().isPresent())
@@ -481,6 +488,13 @@ public class BobTheFarmerPlugin extends Plugin {
                     TileObjectInteraction.interact(herb, "Pick");
                 });
                 break;
+            case CLEAN_HERBS:
+                List<Widget> grimyHerbs = Inventory.search().withAction("Clean").onlyUnnoted().result();
+                for (int i = 0; i < config.cleanHerbsTick() && i < grimyHerbs.size(); i++) {
+                    MousePackets.queueClickPacket();
+                    InventoryInteraction.useItem(grimyHerbs.get(i), "Clean");
+                }
+                break;
             //Clear out dead herbs
             case CLEAR:
                 //Plant new herbs
@@ -528,18 +542,34 @@ public class BobTheFarmerPlugin extends Plugin {
                 break;
             //Note herbs on Tool Leprechaun
             case NOTE:
-                Inventory.search().nameContains("Grimy").withAction("Clean").onlyUnnoted().first().ifPresentOrElse(herbs -> {
-                    NPCs.search().nameContains("Tool").nearestToPlayer().ifPresent(leprechaun -> {
-                        MousePackets.queueClickPacket();
-                        NPCPackets.queueWidgetOnNPC(leprechaun, herbs);
+                if (config.cleanHerbs())
+                {
+                    Inventory.search().withName(config.herb().HerbName).onlyUnnoted().first().ifPresentOrElse(herbs -> {
+                        NPCs.search().nameContains("Tool").nearestToPlayer().ifPresent(leprechaun -> {
+                            MousePackets.queueClickPacket();
+                            NPCPackets.queueWidgetOnNPC(leprechaun, herbs);
+                        });
+                    }, () -> {
+                        //After noting set the patch to done
+                        herbPatch.State = HerbPatchState.DONE;
                     });
-                }, () -> {
-                    //After noting set the patch to done
-                    herbPatch.State = HerbPatchState.DONE;
-                });
+                }
+                else
+                {
+                    Inventory.search().nameContains("Grimy").withAction("Clean").onlyUnnoted().first().ifPresentOrElse(herbs -> {
+                        NPCs.search().nameContains("Tool").nearestToPlayer().ifPresent(leprechaun -> {
+                            MousePackets.queueClickPacket();
+                            NPCPackets.queueWidgetOnNPC(leprechaun, herbs);
+                        });
+                    }, () -> {
+                        //After noting set the patch to done
+                        herbPatch.State = HerbPatchState.DONE;
+                    });
+                }
+
                 break;
             case MANAGE_INVETORY:
-                Inventory.search().nameContains("Grimy").withAction("Clean").onlyUnnoted().first().ifPresent(herbs -> {
+                Inventory.search().nameContains(config.herb().HerbName).onlyUnnoted().first().ifPresent(herbs -> {
                     NPCs.search().nameContains("Tool").nearestToPlayer().ifPresent(leprechaun -> {
                         MousePackets.queueClickPacket();
                         NPCPackets.queueWidgetOnNPC(leprechaun, herbs);

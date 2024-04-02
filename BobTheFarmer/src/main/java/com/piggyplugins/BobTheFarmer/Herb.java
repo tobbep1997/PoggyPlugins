@@ -2,25 +2,27 @@ package com.piggyplugins.BobTheFarmer;
 
 //Types of herbs that are supported by the bot
 public enum Herb {
-    Guam_leaf("Guam seed"),
-    Marrentill("Marrentill seed"),
-    Tarromin("Tarromin seed"),
-    Harralander("Harralander seed"),
-    Ranarr_weed("Ranarr seed"),
-    Toadflax("Toadflax seed"),
-    Irit_leaf("Irit seed"),
-    Avantoe("Avantoe seed"),
-    Kwuarm("Kwuarm seed"),
-    Snapdragon("Snapdragon seed"),
-    Cadantine("Cadantine seed"),
-    Lantadyme("Lantadyme seed"),
-    Dwarf_weed("Dwarf weed seed"),
-    Torstol("Torstol seed")
+    Guam_leaf("Guam seed", "Guam leaf"),
+    Marrentill("Marrentill seed", "Marrentill"),
+    Tarromin("Tarromin seed", "Tarromin"),
+    Harralander("Harralander seed", "Harralander"),
+    Ranarr_weed("Ranarr seed", "Ranarr weed"),
+    Toadflax("Toadflax seed", "Toadflax"),
+    Irit_leaf("Irit seed", "Irit leaf"),
+    Avantoe("Avantoe seed", "Avantoe"),
+    Kwuarm("Kwuarm seed", "Kwuarm"),
+    Snapdragon("Snapdragon seed", "Snapdragon"),
+    Cadantine("Cadantine seed", "Cadantine"),
+    Lantadyme("Lantadyme seed", "Lantadyme"),
+    Dwarf_weed("Dwarf weed seed", "Dwarf weed"),
+    Torstol("Torstol seed", "Torstol")
     ;
 
     public final String SeedName;
-    Herb(String itemName)
+    public final String HerbName;
+    Herb(String itemName, String herbName)
     {
         this.SeedName = itemName;
+        this.HerbName = herbName;
     }
 }

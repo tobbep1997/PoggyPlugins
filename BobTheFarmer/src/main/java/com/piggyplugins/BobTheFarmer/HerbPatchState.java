@@ -12,9 +12,10 @@ public enum HerbPatchState
     PLANTING(6),
     COMPOST(7),
     EMPTY_INVENTORY(8),
-    NOTE(9),
-    MANAGE_INVETORY(9),
-    DONE(10);
+    CLEAN_HERBS(9),
+    NOTE(10),
+    MANAGE_INVETORY(10),
+    DONE(11);
 
     public final int Index;
     private HerbPatchState(int index)
