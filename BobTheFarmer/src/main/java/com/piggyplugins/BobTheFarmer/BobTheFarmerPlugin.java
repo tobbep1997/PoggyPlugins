@@ -9,6 +9,7 @@ import com.example.Packets.*;
 import com.google.inject.Provides;
 import com.piggyplugins.PiggyUtils.API.BankUtil;
 import net.runelite.api.*;
+import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameTick;
@@ -611,13 +612,13 @@ public class BobTheFarmerPlugin extends Plugin {
                 break;
             //Pay to get the tree removed
             case PAY:
-                NPCs.search().withAction("Pay").nearestToPlayer().ifPresent(npc -> {
+                NPCs.search().withAction(treePatch.Name != "Farming Guild" ? "Pay" : "Pay (tree patch)").nearestToPlayer().ifPresent(npc -> {
                     Widgets.search().withTextContains("tree chopped down").hiddenState(false).first().ifPresentOrElse(payWidget -> {
                         MousePackets.queueClickPacket();
                         WidgetPackets.queueResumePause(payWidget.getId(), 1);
                     }, () -> {
                         MousePackets.queueClickPacket();
-                        NPCInteraction.interact(npc, "Pay");
+                        NPCInteraction.interact(npc, treePatch.Name != "Farming Guild" ? "Pay" : "Pay (tree patch)");
                     });
                 });
                 break;
@@ -633,14 +634,14 @@ public class BobTheFarmerPlugin extends Plugin {
                 break;
             //Pay to have the tree protected
             case PROTECT:
-                NPCs.search().withAction("Pay").nearestToPlayer().ifPresent(npc -> {
+                NPCs.search().withAction(treePatch.Name != "Farming Guild" ? "Pay" : "Pay (tree patch)").nearestToPlayer().ifPresent(npc -> {
                     Widgets.search().withTextContains("Pay").hiddenState(false).first().ifPresentOrElse(payWidget -> {
                         MousePackets.queueClickPacket();
                         WidgetPackets.queueResumePause(payWidget.getId(), 1);
                         treePatch.State = TreePatchState.DONE;
                     }, () -> {
                         MousePackets.queueClickPacket();
-                        NPCInteraction.interact(npc, "Pay");
+                        NPCInteraction.interact(npc, treePatch.Name != "Farming Guild" ? "Pay" : "Pay (tree patch)");
                     });
                     Widgets.search().withTextContains("already looking after that patch").hiddenState(false).first().ifPresent(widget -> {
                         treePatch.State = TreePatchState.DONE;
