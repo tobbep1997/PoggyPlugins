@@ -1600,24 +1600,40 @@ public class BobTheFarmerPlugin extends Plugin {
     }
 
     //Find close banks
-    private TileObject BankCloseBy(int distance)
-    {
+    private TileObject BankCloseBy(int distance) {
         Optional<TileObject> bankBooth = null;
-
         bankBooth = TileObjects.search().withAction("Bank").withinDistance(distance).nearestToPlayer();
         if (bankBooth.isPresent())
             return bankBooth.get();
 
-        bankBooth = TileObjects.search().withName("Bank chest").withinDistance(distance).nearestToPlayer();
+        Optional<TileObject> bankChest = null;
+        bankChest = TileObjects.search().withName("Bank chest").withinDistance(distance).nearestToPlayer();
+        if (bankChest.isPresent())
+            return bankChest.get();
+
+        if (bankBooth.isPresent() && bankChest.isPresent())
+        {
+            WorldPoint playerPos = client.getLocalPlayer().getWorldLocation();
+
+            int bbDist = CalculateDistance(playerPos.getX(), playerPos.getY(), bankBooth.get().getX(), bankBooth.get().getY());
+            int bcDist = CalculateDistance(playerPos.getX(), playerPos.getY(), bankChest.get().getX(), bankChest.get().getY());
+
+            return bbDist < bcDist ? bankBooth.get() : bankChest.get();
+        }
         if (bankBooth.isPresent())
             return bankBooth.get();
-
+        if (bankChest.isPresent())
+            return bankChest.get();
         return null;
     }
 
-    //Returns the interaction of a bank object
-    private String GetBankInteraction(TileObject bankObject)
+    private int CalculateDistance(int x1, int y1, int x2, int y2)
     {
+        return (int)Math.round(Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2)));
+    }
+
+    //Returns the interaction of a bank object
+    private String GetBankInteraction(TileObject bankObject) {
         ObjectComposition objectComposition = TileObjectQuery.getObjectComposition(bankObject);
         return Arrays.stream(objectComposition.getActions()).anyMatch(action -> action != null && action.toLowerCase().contains("bank")) ? "Bank" : "Use";
     }
