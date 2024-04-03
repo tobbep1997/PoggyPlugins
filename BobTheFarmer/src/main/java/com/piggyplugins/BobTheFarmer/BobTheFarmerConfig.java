@@ -86,6 +86,17 @@ public interface BobTheFarmerConfig extends Config {
         return "Rune pouch";
     }
     @ConfigItem(
+            keyName = "bankTeleport",
+            name = "Bank teleport",
+            description = "",
+            position = 1,
+            section = generalConfiguration
+    )
+    default BankTeleport bankTeleport() {
+        return BankTeleport.NONE;
+    }
+
+    @ConfigItem(
             keyName = "debugDisableRestock",
             name = "debugDisableRestock",
             description = "",
@@ -231,7 +242,7 @@ public interface BobTheFarmerConfig extends Config {
         return false;
     }
     @ConfigItem(
-            name = "Civitas illa Fortis herb patch",
+            name = "Civitas illa Fortis herb patch(WIP)",
             keyName = "enableCivitasIllaFortis",
             description = "",
             position = 2,
@@ -261,7 +272,7 @@ public interface BobTheFarmerConfig extends Config {
         return false;
     }
     @ConfigItem(
-            name = "Harmony Island herb patch",
+            name = "Harmony Island herb patch(WIP)",
             keyName = "enableHarmonyIsland",
             description = "",
             position = 5,
@@ -291,7 +302,7 @@ public interface BobTheFarmerConfig extends Config {
         return false;
     }
     @ConfigItem(
-            name = "Troll Stronghold herb patch",
+            name = "Troll Stronghold herb patch(WIP)",
             keyName = "enableTrollStronghold",
             description = "",
             position = 7,
@@ -301,7 +312,7 @@ public interface BobTheFarmerConfig extends Config {
         return false;
     }
     @ConfigItem(
-            name = "Weiss herb patch",
+            name = "Weiss herb patch(WIP)",
             keyName = "enableWeiss",
             description = "",
             position = 8,

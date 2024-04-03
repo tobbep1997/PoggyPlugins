@@ -125,8 +125,8 @@ public class BobTheFarmerPlugin extends Plugin {
     private void onGameTick(GameTick event) {
         if (!EthanApiPlugin.loggedIn() || !started) {
             // We do an early return if the user isn't logged in
-            herbBankState = BankState.DEPOSIT;
-            treeBankState = BankState.DEPOSIT;
+            herbBankState = BankState.TELEPORT;
+            treeBankState = BankState.TELEPORT;
             herbRun = false;
             treeRun = false;
             return;
@@ -616,6 +616,9 @@ public class BobTheFarmerPlugin extends Plugin {
             if (Inventory.search().withName(config.tree().Sapling).first().isPresent())
                 return TreePatchState.PLANT;
         //Pay to protect
+        if (TileObjects.search().withinBounds(min, max).nameContains("sapling").withAction("Inspect").nearestToPlayer().isPresent())
+            return TreePatchState.PROTECT;
+        //Pay to protect
         if (TileObjects.search().withinBounds(min, max).nameContains("tree").withAction("Inspect").nearestToPlayer().isPresent())
             return TreePatchState.PROTECT;
 
@@ -743,6 +746,12 @@ public class BobTheFarmerPlugin extends Plugin {
     //Restocks on anything that is needed for the herb run
     private void RestockHerb() {
 
+        if (herbBankState == BankState.TELEPORT)
+        {
+            TeleportToBank();
+            herbBankState = BankState.DEPOSIT;
+            return;
+        }
         //Check if bank is open
         if (Bank.isOpen()) {
             //Add all items that are needed to the keepItems List
@@ -802,22 +811,23 @@ public class BobTheFarmerPlugin extends Plugin {
                 case WITHDRAW:
                     if (!getWithdrawNotes())
                     {
+                        WithdrawBankTeleport();
                         //Take out basic tools
                         for (String tool : HerbTools) {
-                            if (!TakeOutItemFromBank(tool, 1)) {
+                            if (!WithdrawItemFromBank(tool, 1)) {
                                 Stop("Missing " + tool + " in bank");
                                 return;
                             }
                         }
 
                         //Take out seeds
-                        if (!TakeOutItemFromBank(config.herb().SeedName, patches)) {
+                        if (!WithdrawItemFromBank(config.herb().SeedName, patches)) {
                             Stop("Missing " + config.herb().name() + " in bank");
                             return;
                         }
 
                         //Take out compost
-                        if (!TakeOutItemFromBank(config.compost().Name, patches)) {
+                        if (!WithdrawItemFromBank(config.compost().Name, patches)) {
                             Stop("Missing " + config.compost() + " in bank");
                             return;
                         }
@@ -825,7 +835,7 @@ public class BobTheFarmerPlugin extends Plugin {
                         //Take out additional items
                         String[] additionalItems = config.additionalItems().split(",");
                         for (String tool : additionalItems) {
-                            if (!TakeOutItemFromBank(tool, 1)) {
+                            if (!WithdrawItemFromBank(tool, 1)) {
                                 Stop("Missing " + tool + " in bank");
                                 return;
                             }
@@ -836,14 +846,14 @@ public class BobTheFarmerPlugin extends Plugin {
                         {
                             for (String tool : ArdougneHerbPatch.Tools)
                             {
-                                if (!TakeOutItemFromBank(tool, 1)) {
+                                if (!WithdrawItemFromBank(tool, 1)) {
                                     Stop("Missing " + tool + " in bank");
                                     return;
                                 }
                             }
 
                             for (int i = 4; i >= 2; i--) {
-                                if (TakeOutItemFromBank("Ardougne cloak " + i, 1)) {
+                                if (WithdrawItemFromBank("Ardougne cloak " + i, 1)) {
                                     break;
                                 }
                             }
@@ -854,7 +864,7 @@ public class BobTheFarmerPlugin extends Plugin {
                         {
                             for (String tool : CatherbyHerbPatch.Tools)
                             {
-                                if (!TakeOutItemFromBank(tool, 1)) {
+                                if (!WithdrawItemFromBank(tool, 1)) {
                                     Stop("Missing " + tool + " in bank");
                                     return;
                                 }
@@ -866,14 +876,14 @@ public class BobTheFarmerPlugin extends Plugin {
                         {
                             for (String tool : FaladorHerbPatch.Tools)
                             {
-                                if (!TakeOutItemFromBank(tool, 1)) {
+                                if (!WithdrawItemFromBank(tool, 1)) {
                                     Stop("Missing " + tool + " in bank");
                                     return;
                                 }
                             }
 
                             for (int i = 4; i >= 2; i--) {
-                                if (TakeOutItemFromBank("Explorer's ring " + i, 1)) {
+                                if (WithdrawItemFromBank("Explorer's ring " + i, 1)) {
                                     break;
                                 }
                             }
@@ -882,7 +892,7 @@ public class BobTheFarmerPlugin extends Plugin {
                         {
                             for (String tool : PortPhasmatysHerbPatch.Tools)
                             {
-                                if (!TakeOutItemFromBank(tool, 1)) {
+                                if (!WithdrawItemFromBank(tool, 1)) {
                                     Stop("Missing " + tool + " in bank");
                                     return;
                                 }
@@ -893,7 +903,7 @@ public class BobTheFarmerPlugin extends Plugin {
                         {
                             for (int i = 1; i <= 6; i++)
                             {
-                                if (TakeOutItemFromBank("Skills necklace(" + i + ")", 1))
+                                if (WithdrawItemFromBank("Skills necklace(" + i + ")", 1))
                                 {
                                     break;
                                 }
@@ -945,6 +955,13 @@ public class BobTheFarmerPlugin extends Plugin {
     //Restocks on anything that is needed for the herb run
     private void RestockTree() {
 
+        if (treeBankState == BankState.TELEPORT)
+        {
+            TeleportToBank();
+            treeBankState = BankState.DEPOSIT;
+            return;
+        }
+
         //Check if bank is open
         if (Bank.isOpen()) {
             //Add all items that are needed to the keepItems List
@@ -979,6 +996,7 @@ public class BobTheFarmerPlugin extends Plugin {
 
             //Banking state machine
             switch (treeBankState){
+
                 //Deposit items that are not needed
                 case DEPOSIT:
                     List<Widget> bankInv = BankInventory.search().filter(widget -> !CompareItem(keepItems, widget.getName())).result();
@@ -992,22 +1010,25 @@ public class BobTheFarmerPlugin extends Plugin {
                 case WITHDRAW:
                     if (!getWithdrawNotes())
                     {
+
+                        WithdrawBankTeleport();
+
                         //Take out basic tools
                         for (String tool : TreeTools) {
-                            if (!TakeOutItemFromBank(tool, 1)) {
+                            if (!WithdrawItemFromBank(tool, 1)) {
                                 Stop("Missing " + tool + " in bank");
                                 return;
                             }
                         }
 
                         //Take out seeds
-                        if (!TakeOutItemFromBank(config.tree().Sapling, patches)) {
+                        if (!WithdrawItemFromBank(config.tree().Sapling, patches)) {
                             Stop("Missing " + config.tree().Sapling + " in bank");
                             return;
                         }
 
                         //Take out coins
-                        if (!TakeOutItemFromBank("Coins", 200 * patches)) {
+                        if (!WithdrawItemFromBank("Coins", 200 * patches)) {
                             Stop("Missing " + 200 * patches + " coins in bank you broke fuck");
                             return;
                         }
@@ -1015,7 +1036,7 @@ public class BobTheFarmerPlugin extends Plugin {
                         //Take out additional items
                         String[] additionalItems = config.additionalItems().split(",");
                         for (String tool : additionalItems) {
-                            if (!TakeOutItemFromBank(tool, 1)) {
+                            if (!WithdrawItemFromBank(tool, 1)) {
                                 Stop("Missing " + tool + " in bank");
                                 return;
                             }
@@ -1026,7 +1047,7 @@ public class BobTheFarmerPlugin extends Plugin {
                         {
                             for (int i = 1; i <= 6; i++)
                             {
-                                if (TakeOutItemFromBank("Skills necklace(" + i + ")", 1))
+                                if (WithdrawItemFromBank("Skills necklace(" + i + ")", 1))
                                 {
                                     break;
                                 }
@@ -1049,7 +1070,7 @@ public class BobTheFarmerPlugin extends Plugin {
                         if (getWithdrawNotes())
                         {
                             //Take protection items
-                            if (!TakeOutItemFromBank(config.tree().ProtectionItem, config.tree().AmountOfProtectionItem * patches)) {
+                            if (!WithdrawItemFromBank(config.tree().ProtectionItem, config.tree().AmountOfProtectionItem * patches)) {
                                 Stop("Missing " + config.tree().ProtectionItem + " in bank");
                                 return;
                             }
@@ -1083,23 +1104,70 @@ public class BobTheFarmerPlugin extends Plugin {
         }
     }
 
+    //Withdraws a teleport from the bank to a bank
+    private void WithdrawBankTeleport() {
+        switch (config.bankTeleport())
+        {
+            case CRAFTING_CAPE:
+                if (!WithdrawItemFromBank("Crafting cape(t)", 1))
+                    if (!WithdrawItemFromBank("Crafting cape", 1))
+                        return;
+                break;
+        }
+    }
+
+    //Teleport to the bank
+    private void TeleportToBank() {
+        if (BankCloseBy(20) != null)
+            return;
+
+        switch (config.bankTeleport())
+        {
+            case CRAFTING_CAPE:
+                Inventory.search().withName("Crafting cape(t)").withAction("Teleport").first().ifPresentOrElse(trimmedCape -> {
+                    MousePackets.queueClickPacket();
+                    InventoryInteraction.useItem(trimmedCape, "Teleport");
+
+                }, () -> {
+                    Inventory.search().withName("Crafting cape").withAction("Teleport").first().ifPresent(cape -> {
+                        MousePackets.queueClickPacket();
+                        InventoryInteraction.useItem(cape, "Teleport");
+                    });
+                });
+                break;
+        }
+    }
+
+    //Find close banks
+    private TileObject BankCloseBy(int distance)
+    {
+        Optional<TileObject> bankBooth = null;
+
+        bankBooth = TileObjects.search().withAction("Bank").withinDistance(distance).nearestToPlayer();
+        if (bankBooth.isPresent())
+            return bankBooth.get();
+
+        bankBooth = TileObjects.search().withName("Bank chest").withinDistance(distance).nearestToPlayer();
+        if (bankBooth.isPresent())
+            return bankBooth.get();
+
+        return null;
+    }
+
+    //Returns the interaction of a bank object
+    private String GetBankInteraction(TileObject bankObject)
+    {
+        ObjectComposition objectComposition = TileObjectQuery.getObjectComposition(bankObject);
+        return Arrays.stream(objectComposition.getActions()).anyMatch(action -> action != null && action.toLowerCase().contains("bank")) ? "Bank" : "Use";
+    }
+
     //Opens the closes bank
     private void OpenBank() {
-        Optional<TileObject> bankBooth = TileObjects.search().filter(tileObject -> {
-            ObjectComposition objectComposition = TileObjectQuery.getObjectComposition(tileObject);
-            return getName().toLowerCase().contains("bank") ||
-                    Arrays.stream(objectComposition.getActions()).anyMatch(action -> action != null && action.toLowerCase().contains("bank"));
-        }).nearestToPlayer();
-
-        if (bankBooth.isPresent()) {
+        TileObject bankBooth = BankCloseBy(20);
+        if (bankBooth != null) {
             MousePackets.queueClickPacket();
-            TileObjectInteraction.interact(bankBooth.get(), "Bank");
+            TileObjectInteraction.interact(bankBooth, GetBankInteraction(bankBooth));
         }
-
-        TileObjects.search().withName("Bank chest").nearestToPlayer().ifPresent(tileObject -> {
-            MousePackets.queueClickPacket();
-            TileObjectInteraction.interact(tileObject, "Use");
-        });
     }
 
     //Set the bank to withdraw in either noted or unnoted form
@@ -1129,7 +1197,7 @@ public class BobTheFarmerPlugin extends Plugin {
 
     //Take out a set amount of items from the bank
     //This double checks if you have any items in the invetory already so it dosen't withdraw too much
-    private boolean TakeOutItemFromBank(String item, int amount) {
+    private boolean WithdrawItemFromBank(String item, int amount) {
         AtomicBoolean succeeded = new AtomicBoolean(false);
         BankUtil.nameContainsNoCase(item).first().ifPresentOrElse(widget ->
             {
