@@ -15,7 +15,8 @@ public class Paths {
             new WorldPoint(2970,3379,0),
             new WorldPoint(3004,3364,0),
             new WorldPoint(3005,3327,0),
-            new WorldPoint(3030,3316,0),
+            new WorldPoint(3030,3319,0),
+            new WorldPoint(3055, 3309, 0)
     };
     public static WorldPoint[] FaladorHerbTeleportPath2 = {
             new WorldPoint(3042,3305,0)

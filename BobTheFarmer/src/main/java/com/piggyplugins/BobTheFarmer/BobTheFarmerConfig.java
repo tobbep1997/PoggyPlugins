@@ -180,13 +180,21 @@ public interface BobTheFarmerConfig extends Config {
             keyName = "herb",
             name = "Herb",
             description = "",
-            position = -4,
+            position = -6,
             section = herbPatches
 
     )
     default Herb herb() {
         return Herb.Guam_leaf;
     }
+    @ConfigItem(
+            keyName = "compost",
+            name = "Compost",
+            description = "",
+            position = -5,
+            section = herbPatches
+    )
+    default Compost_Type compost() { return Compost_Type.Ultracompost; }
     @ConfigItem(
             keyName = "allotment",
             name = "Allotment",
@@ -199,15 +207,14 @@ public interface BobTheFarmerConfig extends Config {
         return Allotment.NONE;
     }
     @ConfigItem(
-            keyName = "compost",
-            name = "Compost",
+            keyName = "whiteLilly",
+            name = "White Lilly planted",
             description = "",
             position = -4,
             section = herbPatches
+
     )
-    default Compost_Type compost() {
-        return Compost_Type.Ultracompost;
-    }
+    default boolean whiteLilly() { return false; }
     @ConfigItem(
             keyName = "cleanHerbs",
             name = "Clean herbs",

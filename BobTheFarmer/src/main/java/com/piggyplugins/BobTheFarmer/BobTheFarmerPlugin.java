@@ -78,8 +78,18 @@ public class BobTheFarmerPlugin extends Plugin {
 
     //------------------------------------- Allotment pathces -------------------------------------
     AllotmentPatch AllotmentPatchStateDisplay = null;
+    private AllotmentPatch ArdougneNorthAllotmentPatch = null;
+    private AllotmentPatch ArdougneSouthAllotmentPatch = null;
     private AllotmentPatch CatherbyNorthAllotmentPatch = null;
     private AllotmentPatch CatherbySouthAllotmentPatch = null;
+    private AllotmentPatch FaladorNorthAllotmentPatch = null;
+    private AllotmentPatch FaladorSouthAllotmentPatch = null;
+    private AllotmentPatch FarmingGuildNorthAllotmentPatch = null;
+    private AllotmentPatch FarmingGuildSouthAllotmentPatch = null;
+    private AllotmentPatch HosidiusNorthAllotmentPatch = null;
+    private AllotmentPatch HosidiusSouthAllotmentPatch = null;
+    private AllotmentPatch PortPhasmatysNorthAllotmentPatch = null;
+    private AllotmentPatch PortPhasmatysSouthAllotmentPatch = null;
 
     //------------------------------------- Tree variables -------------------------------------
     boolean treeRun = false;
@@ -141,13 +151,6 @@ public class BobTheFarmerPlugin extends Plugin {
             return;
         }
 
-        if (config.debugStateMachine())
-        {
-            FarmAllotment(CatherbyNorthAllotmentPatch);
-
-            return;
-        }
-
         //Reset herb run data if not on a herb run
         if (!herbRun)
         {
@@ -197,15 +200,65 @@ public class BobTheFarmerPlugin extends Plugin {
     }
     //Resets all allotment run data to its default state
     private void ResetAllotmentPatchStates() {
+        ArdougneNorthAllotmentPatch = new AllotmentPatch(
+                "Ardougne north",
+                new WorldArea(new WorldPoint(2671, 3377, 0), 1, 2),
+                "Pay (north)",
+                new String[] {});
+        ArdougneSouthAllotmentPatch = new AllotmentPatch(
+                "Ardougne south",
+                new WorldArea(new WorldPoint(2671, 3372, 0), 1, -2),
+                "Pay (south)",
+                new String[] {});
         CatherbyNorthAllotmentPatch = new AllotmentPatch(
-                "Catherby",
-                new WorldArea(new WorldPoint(2804, 3465, 0), 11, 4),
+                "Catherby north",
+                new WorldArea(new WorldPoint(2814, 3466, 0), 1, 2),
                 "Pay (north)",
                 new String[] {});
         CatherbySouthAllotmentPatch = new AllotmentPatch(
-                "Catherby",
-                new WorldArea(new WorldPoint(2804, 3458, 0), 11, 4),
+                "Catherby south",
+                new WorldArea(new WorldPoint(2814, 3461, 0), 1, -2),
                 "Pay (south)",
+                new String[] {});
+        FaladorNorthAllotmentPatch = new AllotmentPatch(
+                "Falador north",
+                new WorldArea(new WorldPoint(3052, 3307, 0), -2, 1),
+                "Pay (north-west)",
+                new String[] {});
+        FaladorSouthAllotmentPatch = new AllotmentPatch(
+                "Falador south",
+                new WorldArea(new WorldPoint(3054, 3304, 0), 2, 1),
+                "Pay (south-east)",
+                new String[] {});
+        FarmingGuildNorthAllotmentPatch = new AllotmentPatch(
+                "Farming Guild north",
+                new WorldArea(new WorldPoint(1267, 3731, 0), 1, 2),
+                "Pay (north)",
+                new String[] {});
+        FarmingGuildSouthAllotmentPatch = new AllotmentPatch(
+                "Farming Guild south",
+                new WorldArea(new WorldPoint(1267, 3728, 0), 1, -2),
+                "Pay (south)",
+                new String[] {});
+        HosidiusNorthAllotmentPatch = new AllotmentPatch(
+                "Hosidius north",
+                new WorldArea(new WorldPoint(1738, 3553, 0), 1, 2),
+                "Pay (north-east)",
+                new String[] {});
+        HosidiusSouthAllotmentPatch = new AllotmentPatch(
+                "Hosidius south",
+                new WorldArea(new WorldPoint(1735, 3552, 0), 1, -2),
+                "Pay (south-west)",
+                new String[] {});
+        PortPhasmatysNorthAllotmentPatch = new AllotmentPatch(
+                "Port Phasmatys north",
+                new WorldArea(new WorldPoint(3598, 3524, 0), 1, 2),
+                "Pay (north-west)",
+                new String[] {});
+        PortPhasmatysSouthAllotmentPatch = new AllotmentPatch(
+                "Port Phasmatys south",
+                new WorldArea(new WorldPoint(3602, 3523, 0), 1, -2),
+                "Pay (south-east)",
                 new String[] {});
     }
     //Resets all tree run data to its default state
@@ -255,37 +308,77 @@ public class BobTheFarmerPlugin extends Plugin {
             case HERB_ARDOUGNE:
                 FarmHerbs(ArdougneHerbPatch);
                 break;
+            case ALLOTMENT_ARDOUGNE_1:
+                FarmAllotment(ArdougneNorthAllotmentPatch);
+                break;
+            case ALLOTMENT_ARDOUGNE_2:
+                FarmAllotment(ArdougneSouthAllotmentPatch);
+                break;
+
             case HERB_TRAVEL_CATHERBY:
                 TravelToCatherbyHerbPatch(CatherbyHerbPatch);
                 break;
             case HERB_CATHERBY:
                 FarmHerbs(CatherbyHerbPatch);
                 break;
+            case ALLOTMENT_CATHERBY_1:
+                FarmAllotment(CatherbyNorthAllotmentPatch);
+                break;
+            case ALLOTMENT_CATHERBY_2:
+                FarmAllotment(CatherbySouthAllotmentPatch);
+                break;
+
             case HERB_TRAVEL_FALADOR:
                 TravelToFaladorHerbPatch(FaladorHerbPatch);
                 break;
             case HERB_FALADOR:
                 FarmHerbs(FaladorHerbPatch);
                 break;
+            case ALLOTMENT_FALADOR_1:
+                FarmAllotment(FaladorNorthAllotmentPatch);
+                break;
+            case ALLOTMENT_FALADOR_2:
+                FarmAllotment(FaladorSouthAllotmentPatch);
+                break;
+
             case HERB_TRAVEL_PORT_PHASMATYS:
                 TravelToPortPhasmatysHerbPatch(PortPhasmatysHerbPatch);
                 break;
             case HERB_PORT_PHASMATYS:
                 FarmHerbs(PortPhasmatysHerbPatch);
                 break;
+            case ALLOTMENT_PORT_PHASMATYS_1:
+                FarmAllotment(PortPhasmatysNorthAllotmentPatch);
+                break;
+            case ALLOTMENT_PORT_PHASMATYS_2:
+                FarmAllotment(PortPhasmatysSouthAllotmentPatch);
+                break;
+
             case HERB_TRAVEL_HOSIDIUS:
                 TravelToHosidiusHerbPatch(HosidiusHerbPatch);
                 break;
             case HERB_HOSIDIUS:
                 FarmHerbs(HosidiusHerbPatch);
                 break;
+            case ALLOTMENT_HOSIDIUS_1:
+                FarmAllotment(HosidiusNorthAllotmentPatch);
+                break;
+            case ALLOTMENT_HOSIDIUS_2:
+                FarmAllotment(HosidiusSouthAllotmentPatch);
+                break;
+
             case HERB_TRAVEL_FARMING_GUILD:
                 TravelToFarmingGuildHerbPatch(FarmingGuildHerbPatch);
                 break;
             case HERB_FARMING_GUILD:
                 FarmHerbs(FarmingGuildHerbPatch);
                 break;
-
+            case ALLOTMENT_FARMING_GUILD_1:
+                FarmAllotment(FarmingGuildNorthAllotmentPatch);
+                break;
+            case ALLOTMENT_FARMING_GUILD_2:
+                FarmAllotment(FarmingGuildSouthAllotmentPatch);
+                break;
 
             //TREE
             case RESTOCK_TREE:
@@ -354,11 +447,37 @@ public class BobTheFarmerPlugin extends Plugin {
                     ArdougneHerbPatch.State != HerbPatchState.DONE)
                 return State.HERB_ARDOUGNE;
 
+            if (config.enableArdougne() && config.allotment() != Allotment.NONE &&
+                    ArdougneNorthAllotmentPatch.State != AllotmentPatchState.DONE) {
+                if(ArdougneNorthAllotmentPatch.State.Index < AllotmentPatchState.PROCESS_ALLOTMENT_PATCH.Index)
+                    ArdougneNorthAllotmentPatch.State = AllotmentPatchState.PROCESS_ALLOTMENT_PATCH;
+                return State.ALLOTMENT_ARDOUGNE_1;
+            }
+            if (config.enableArdougne() && config.allotment() != Allotment.NONE &&
+                    ArdougneSouthAllotmentPatch.State != AllotmentPatchState.DONE) {
+                if(ArdougneSouthAllotmentPatch.State.Index < AllotmentPatchState.PROCESS_ALLOTMENT_PATCH.Index)
+                    ArdougneSouthAllotmentPatch.State = AllotmentPatchState.PROCESS_ALLOTMENT_PATCH;
+                return State.ALLOTMENT_ARDOUGNE_2;
+            }
+
             if (config.enableCatherby() && CatherbyHerbPatch.State.Index < 2 && !config.debugStateMachine())
                 return State.HERB_TRAVEL_CATHERBY;
             if (config.enableCatherby() && (CatherbyHerbPatch.State.Index >= 2 || config.debugStateMachine()) &&
                     CatherbyHerbPatch.State != HerbPatchState.DONE)
                 return State.HERB_CATHERBY;
+
+            if (config.enableCatherby() && config.allotment() != Allotment.NONE &&
+                    CatherbyNorthAllotmentPatch.State != AllotmentPatchState.DONE) {
+                if(CatherbyNorthAllotmentPatch.State.Index < AllotmentPatchState.PROCESS_ALLOTMENT_PATCH.Index)
+                    CatherbyNorthAllotmentPatch.State = AllotmentPatchState.PROCESS_ALLOTMENT_PATCH;
+                return State.ALLOTMENT_CATHERBY_1;
+            }
+            if (config.enableCatherby() && config.allotment() != Allotment.NONE &&
+                    CatherbySouthAllotmentPatch.State != AllotmentPatchState.DONE) {
+                if(CatherbySouthAllotmentPatch.State.Index < AllotmentPatchState.PROCESS_ALLOTMENT_PATCH.Index)
+                    CatherbySouthAllotmentPatch.State = AllotmentPatchState.PROCESS_ALLOTMENT_PATCH;
+                return State.ALLOTMENT_CATHERBY_2;
+            }
 
             if (config.enableFalador() && FaladorHerbPatch.State.Index < 2 && !config.debugStateMachine())
                 return State.HERB_TRAVEL_FALADOR;
@@ -366,29 +485,76 @@ public class BobTheFarmerPlugin extends Plugin {
                     FaladorHerbPatch.State != HerbPatchState.DONE)
                 return State.HERB_FALADOR;
 
+            if (config.enableFalador() && config.allotment() != Allotment.NONE &&
+                    FaladorNorthAllotmentPatch.State != AllotmentPatchState.DONE) {
+                if(FaladorNorthAllotmentPatch.State.Index < AllotmentPatchState.PROCESS_ALLOTMENT_PATCH.Index)
+                    FaladorNorthAllotmentPatch.State = AllotmentPatchState.PROCESS_ALLOTMENT_PATCH;
+                return State.ALLOTMENT_FALADOR_1;
+            }
+            if (config.enableFalador() && config.allotment() != Allotment.NONE &&
+                    FaladorSouthAllotmentPatch.State != AllotmentPatchState.DONE) {
+                if(FaladorSouthAllotmentPatch.State.Index < AllotmentPatchState.PROCESS_ALLOTMENT_PATCH.Index)
+                    FaladorSouthAllotmentPatch.State = AllotmentPatchState.PROCESS_ALLOTMENT_PATCH;
+                return State.ALLOTMENT_FALADOR_2;
+            }
+
             if (config.enablePortPhasmatys() && PortPhasmatysHerbPatch.State.Index < 2 && !config.debugStateMachine())
                 return State.HERB_TRAVEL_PORT_PHASMATYS;
             if (config.enablePortPhasmatys() && (PortPhasmatysHerbPatch.State.Index >= 2 || config.debugStateMachine()) &&
                     PortPhasmatysHerbPatch.State != HerbPatchState.DONE)
                 return State.HERB_PORT_PHASMATYS;
 
-            if (config.enableHosidius() && HosidiusHerbPatch.State.Index < 2 && !config.debugStateMachine())
-                return State.HERB_TRAVEL_HOSIDIUS;
-            if (config.enableHosidius() && (HosidiusHerbPatch.State.Index >= 2 || config.debugStateMachine()) &&
-                    HosidiusHerbPatch.State != HerbPatchState.DONE)
-                return State.HERB_HOSIDIUS;
+            if (config.enablePortPhasmatys() && config.allotment() != Allotment.NONE &&
+                    PortPhasmatysNorthAllotmentPatch.State != AllotmentPatchState.DONE) {
+                if(PortPhasmatysNorthAllotmentPatch.State.Index < AllotmentPatchState.PROCESS_ALLOTMENT_PATCH.Index)
+                    PortPhasmatysNorthAllotmentPatch.State = AllotmentPatchState.PROCESS_ALLOTMENT_PATCH;
+                return State.ALLOTMENT_PORT_PHASMATYS_1;
+            }
+            if (config.enablePortPhasmatys() && config.allotment() != Allotment.NONE &&
+                    PortPhasmatysSouthAllotmentPatch.State != AllotmentPatchState.DONE) {
+                if(PortPhasmatysSouthAllotmentPatch.State.Index < AllotmentPatchState.PROCESS_ALLOTMENT_PATCH.Index)
+                    PortPhasmatysSouthAllotmentPatch.State = AllotmentPatchState.PROCESS_ALLOTMENT_PATCH;
+                return State.ALLOTMENT_PORT_PHASMATYS_2;
+            }
 
             if (config.enableHosidius() && HosidiusHerbPatch.State.Index < 2 && !config.debugStateMachine())
                 return State.HERB_TRAVEL_HOSIDIUS;
             if (config.enableHosidius() && (HosidiusHerbPatch.State.Index >= 2 || config.debugStateMachine()) &&
                     HosidiusHerbPatch.State != HerbPatchState.DONE)
                 return State.HERB_HOSIDIUS;
+
+            if (config.enableHosidius() && config.allotment() != Allotment.NONE &&
+                    HosidiusNorthAllotmentPatch.State != AllotmentPatchState.DONE) {
+                if(HosidiusNorthAllotmentPatch.State.Index < AllotmentPatchState.PROCESS_ALLOTMENT_PATCH.Index)
+                    HosidiusNorthAllotmentPatch.State = AllotmentPatchState.PROCESS_ALLOTMENT_PATCH;
+                return State.ALLOTMENT_HOSIDIUS_1;
+            }
+            if (config.enableHosidius() && config.allotment() != Allotment.NONE &&
+                    HosidiusSouthAllotmentPatch.State != AllotmentPatchState.DONE) {
+                if(HosidiusSouthAllotmentPatch.State.Index < AllotmentPatchState.PROCESS_ALLOTMENT_PATCH.Index)
+                    HosidiusSouthAllotmentPatch.State = AllotmentPatchState.PROCESS_ALLOTMENT_PATCH;
+                return State.ALLOTMENT_HOSIDIUS_2;
+            }
 
             if (config.enableFarmingGuild() && FarmingGuildHerbPatch.State.Index < 2 && !config.debugStateMachine())
                 return State.HERB_TRAVEL_FARMING_GUILD;
             if (config.enableFarmingGuild() && (FarmingGuildHerbPatch.State.Index >= 2 || config.debugStateMachine()) &&
                     FarmingGuildHerbPatch.State != HerbPatchState.DONE)
                 return State.HERB_FARMING_GUILD;
+
+            if (config.enableFarmingGuild() && config.allotment() != Allotment.NONE &&
+                    FarmingGuildNorthAllotmentPatch.State != AllotmentPatchState.DONE) {
+                if(FarmingGuildNorthAllotmentPatch.State.Index < AllotmentPatchState.PROCESS_ALLOTMENT_PATCH.Index)
+                    FarmingGuildNorthAllotmentPatch.State = AllotmentPatchState.PROCESS_ALLOTMENT_PATCH;
+                return State.ALLOTMENT_FARMING_GUILD_1;
+            }
+            if (config.enableFarmingGuild() && config.allotment() != Allotment.NONE &&
+                    FarmingGuildSouthAllotmentPatch.State != AllotmentPatchState.DONE) {
+                if(FarmingGuildSouthAllotmentPatch.State.Index < AllotmentPatchState.PROCESS_ALLOTMENT_PATCH.Index)
+                    FarmingGuildSouthAllotmentPatch.State = AllotmentPatchState.PROCESS_ALLOTMENT_PATCH;
+                return State.ALLOTMENT_FARMING_GUILD_2;
+            }
+
             herbRun = false;
         }
 
@@ -565,28 +731,8 @@ public class BobTheFarmerPlugin extends Plugin {
             //Use compost on the herbs
             case COMPOST:
                 TileObjects.search().nameContains("Herbs").withAction("Inspect").first().ifPresent(tileObject -> {
-                    if (config.bottomlessBucket())
-                    {
-                        Inventory.search().withName(BottomlessCompostBucket).first().ifPresent(item -> {
-                            MousePackets.queueClickPacket();
-                            MousePackets.queueClickPacket();
-                            ObjectPackets.queueWidgetOnTileObject(item, tileObject);
-
-                            //Set the state to note so it notes any herbs in the inventory
-                            herbPatch.State = HerbPatchState.NOTE;
-                        });
-                    }
-                    else
-                    {
-                        Inventory.search().withName(config.compost().Name).first().ifPresent(item -> {
-                            MousePackets.queueClickPacket();
-                            MousePackets.queueClickPacket();
-                            ObjectPackets.queueWidgetOnTileObject(item, tileObject);
-
-                            //Set the state to note so it notes any herbs in the inventory
-                            herbPatch.State = HerbPatchState.NOTE;
-                        });
-                    }
+                    if (CompostTileObject(tileObject))
+                        herbPatch.State = HerbPatchState.NOTE;
                 });
                 break;
             //Check if there is any weeds in the inventory and drop them if there is
@@ -668,12 +814,13 @@ public class BobTheFarmerPlugin extends Plugin {
         }
 
         //Check if the patch is not fully grown then mark the patch as done
-        if (TileObjects.search().withinBounds(min, max).withName("plant").first().isPresent() && allotmentPatch.State != AllotmentPatchState.PLANTING)
+        if (TileObjects.search().withinBounds(min, max).withName("plant").first().isPresent() &&
+                allotmentPatch.State.Index < AllotmentPatchState.PLANTING.Index)
             if (!Arrays.asList(TileObjectQuery.getObjectComposition(TileObjects.search().withName("plant").first().get()).getActions()).contains("Pick"))
                 return AllotmentPatchState.NOTE;
 
         //Harvest allotments if there is any
-        if (TileObjects.search().withinBounds(min, max).withName("plant").withAction("Pick").first().isPresent())
+        if (TileObjects.search().withinBounds(min, max).withAction("Harvest").first().isPresent())
             return AllotmentPatchState.HARVEST;
 
         //Clear dead allotments
@@ -681,18 +828,24 @@ public class BobTheFarmerPlugin extends Plugin {
             return AllotmentPatchState.CLEAR;
 
         //Rake allotment patch
-        if (TileObjects.search().withinBounds(min, max).nameContains("Allotment").withAction("Rake").first().isPresent())
+        if (TileObjects.search().withinBounds(min, max).withAction("Rake").first().isPresent() &&
+            Inventory.search().withName(config.allotment().SeedName).first().isPresent())
             return AllotmentPatchState.RAKE;
 
 
         //Check if allotment patch is ready for planting
         if (TileObjects.search().withinBounds(min, max).nameContains("Allotment").withAction("Inspect").first().isPresent())
             if (Inventory.search().withName(config.allotment().SeedName).first().isPresent())
-                return AllotmentPatchState.PLANTING;
+            {
+                if (Inventory.search().withName(config.allotment().SeedName).first().get().getItemQuantity() >= 3)
+                    return AllotmentPatchState.PLANTING;
+            }
 
 
         //Use compost on the allotments
-        if (TileObjects.search().withinBounds(min, max).nameContains("seedling").withAction("Inspect").first().isPresent()) {
+        if ((   TileObjects.search().withinBounds(min, max).nameContains("seedling").withAction("Inspect").first().isPresent() ||
+                TileObjects.search().withinBounds(min, max).nameContains("plant").withAction("Inspect").first().isPresent()) &&
+                allotmentPatch.State.Index <= AllotmentPatchState.COMPOST.Index) {
             if (config.bottomlessBucket())
             {
                 if (Inventory.search().withName(BottomlessCompostBucket).first().isPresent())
@@ -704,29 +857,23 @@ public class BobTheFarmerPlugin extends Plugin {
                     return AllotmentPatchState.COMPOST;
             }
         }
-        //Use compost on the allotments
-        if (TileObjects.search().withinBounds(min, max).nameContains("plant").withAction("Inspect").first().isPresent()) {
-            if (config.bottomlessBucket())
-            {
-                if (Inventory.search().withName(BottomlessCompostBucket).first().isPresent())
-                    return AllotmentPatchState.COMPOST;
-            }
-            else
-            {
-                if (Inventory.search().withName(config.compost().Name).first().isPresent())
-                    return AllotmentPatchState.COMPOST;
-            }
-        }
+
+        //Pay to protect
+        if ((   TileObjects.search().withinBounds(min, max).nameContains("seedling").withAction("Inspect").nearestToPlayer().isPresent() ||
+                TileObjects.search().withinBounds(min, max).nameContains("plant").withAction("Inspect").nearestToPlayer().isPresent()) &&
+                allotmentPatch.State.Index <= AllotmentPatchState.PROTECT.Index &&
+                !config.whiteLilly())
+            return AllotmentPatchState.PROTECT;
 
         //PROCESS_HERB_PATCH is doesen't do anything, it just indicates to the allotment state machine that it should start
-        return AllotmentPatchState.PROCESS_HERB_PATCH;
+        return AllotmentPatchState.DONE;
     }
 
     //Execute Allotment state machine
     private void FarmAllotment(AllotmentPatch allotmentPatch) {
 
         if (config.debugStateMachine() && allotmentPatch.State.Index < 2)
-            allotmentPatch.State = AllotmentPatchState.PROCESS_HERB_PATCH;
+            allotmentPatch.State = AllotmentPatchState.PROCESS_ALLOTMENT_PATCH;
 
         if (allotmentPatch.State.Index < 2 || allotmentPatch.State == AllotmentPatchState.DONE)
             return;
@@ -756,30 +903,30 @@ public class BobTheFarmerPlugin extends Plugin {
         {
             //Harvest allotments if there is any
             case HARVEST:
-                TileObjects.search().withName("Plant").withAction("Pick").first().ifPresent(herb -> {
+                TileObjects.search().withinBounds(min, max).withAction("Harvest").first().ifPresent(allotment -> {
                     MousePackets.queueClickPacket();
-                    TileObjectInteraction.interact(herb, "Pick");
+                    TileObjectInteraction.interact(allotment, "Harvest");
                 });
                 break;
             //Clear out dead allotments
             case CLEAR:
                 //Plant new allotments
-                TileObjects.search().nameContains("Dead herbs").withAction("Clear").first().ifPresent(tileObject -> {
+                TileObjects.search().withinBounds(min, max).withAction("Clear").first().ifPresent(tileObject -> {
                     MousePackets.queueClickPacket();
                     TileObjectInteraction.interact(tileObject, "Clear");
                 });
                 break;
             //Rake the allotment patch
             case RAKE:
-                TileObjects.search().nameContains("Herb patch").withAction("Rake").first().ifPresent(tileObject -> {
+                TileObjects.search().withinBounds(min, max).withAction("Rake").first().ifPresent(tileObject -> {
                     MousePackets.queueClickPacket();
                     TileObjectInteraction.interact(tileObject, "Rake");
                 });
                 break;
             //Plant allotments on allotment patch
             case PLANTING:
-                TileObjects.search().nameContains("Herb patch").withAction("Inspect").first().ifPresent(tileObject -> {
-                    Inventory.search().withName(config.herb().SeedName).first().ifPresent(item -> {
+                TileObjects.search().withinBounds(min, max).nameContains("Allotment").withAction("Inspect").first().ifPresent(tileObject -> {
+                    Inventory.search().withName(config.allotment().SeedName).first().ifPresent(item -> {
                         MousePackets.queueClickPacket();
                         MousePackets.queueClickPacket();
                         ObjectPackets.queueWidgetOnTileObject(item, tileObject);
@@ -788,29 +935,13 @@ public class BobTheFarmerPlugin extends Plugin {
                 break;
             //Use compost on the allotments
             case COMPOST:
-                TileObjects.search().nameContains("Herbs").withAction("Inspect").first().ifPresent(tileObject -> {
-                    if (config.bottomlessBucket())
-                    {
-                        Inventory.search().withName(BottomlessCompostBucket).first().ifPresent(item -> {
-                            MousePackets.queueClickPacket();
-                            MousePackets.queueClickPacket();
-                            ObjectPackets.queueWidgetOnTileObject(item, tileObject);
-
-                            //Set the state to note so it notes any allotments in the inventory
-                            allotmentPatch.State = AllotmentPatchState.NOTE;
-                        });
-                    }
-                    else
-                    {
-                        Inventory.search().withName(config.compost().Name).first().ifPresent(item -> {
-                            MousePackets.queueClickPacket();
-                            MousePackets.queueClickPacket();
-                            ObjectPackets.queueWidgetOnTileObject(item, tileObject);
-
-                            //Set the state to note so it notes any allotments in the inventory
-                            allotmentPatch.State = AllotmentPatchState.NOTE;
-                        });
-                    }
+                TileObjects.search().withinBounds(min, max).nameContains("seedling").withAction("Inspect").first().ifPresent(allotment -> {
+                    if (CompostTileObject(allotment))
+                        allotmentPatch.State = AllotmentPatchState.PROTECT;
+                });
+                TileObjects.search().withinBounds(min, max).nameContains("plant").withAction("Inspect").first().ifPresent(allotment -> {
+                    if (CompostTileObject(allotment))
+                        allotmentPatch.State = AllotmentPatchState.PROTECT;
                 });
                 break;
             //Check if there is any weeds in the inventory and drop them if there is
@@ -820,58 +951,47 @@ public class BobTheFarmerPlugin extends Plugin {
                     InventoryInteraction.useItem(weeds, "Drop");
                 });
                 break;
+            case PROTECT:
+                NPCs.search().withAction(allotmentPatch.NPCInteractionWord).nearestToPlayer().ifPresent(npc -> {
+                    Widgets.search().withTextContains("Pay").hiddenState(false).first().ifPresentOrElse(payWidget -> {
+                        MousePackets.queueClickPacket();
+                        WidgetPackets.queueResumePause(payWidget.getId(), 1);
+                        allotmentPatch.State = AllotmentPatchState.NOTE;
+                    }, () -> {
+                        MousePackets.queueClickPacket();
+                        NPCInteraction.interact(npc, allotmentPatch.NPCInteractionWord);
+                    });
+                    Widgets.search().withTextContains("already looking after that").hiddenState(false).first().ifPresent(widget -> {
+                        allotmentPatch.State = AllotmentPatchState.NOTE;
+                    });
+                });
+                break;
             //Note allotments on Tool Leprechaun
             case NOTE:
-                if (config.cleanHerbs())
-                {
-                    Inventory.search().withName(config.herb().HerbName).onlyUnnoted().first().ifPresentOrElse(herbs -> {
-                        NPCs.search().nameContains("Tool").nearestToPlayer().ifPresent(leprechaun -> {
-                            MousePackets.queueClickPacket();
-                            NPCPackets.queueWidgetOnNPC(leprechaun, herbs);
-                        });
-                    }, () -> {
-                        //After noting set the patch to done
-                        allotmentPatch.State = AllotmentPatchState.DONE;
+                Inventory.search().withName(config.allotment().PlantName).onlyUnnoted().first().ifPresentOrElse(herbs -> {
+                    NPCs.search().nameContains("Tool").nearestToPlayer().ifPresent(leprechaun -> {
+                        MousePackets.queueClickPacket();
+                        NPCPackets.queueWidgetOnNPC(leprechaun, herbs);
                     });
-                }
-                else
-                {
-                    Inventory.search().nameContains("Grimy").withAction("Clean").onlyUnnoted().first().ifPresentOrElse(herbs -> {
-                        NPCs.search().nameContains("Tool").nearestToPlayer().ifPresent(leprechaun -> {
-                            MousePackets.queueClickPacket();
-                            NPCPackets.queueWidgetOnNPC(leprechaun, herbs);
-                        });
-                    }, () -> {
-                        //After noting set the patch to done
-                        allotmentPatch.State = AllotmentPatchState.DONE;
-                    });
-                }
-
+                }, () -> {
+                    //After noting set the patch to done
+                    allotmentPatch.State = AllotmentPatchState.DONE;
+                });
                 break;
             case MANAGE_INVENTORY:
-                if (config.cleanHerbs())
-                {
-                    Inventory.search().withName(config.herb().HerbName).onlyUnnoted().first().ifPresent(herbs -> {
+                    Inventory.search().withName(config.allotment().PlantName).onlyUnnoted().first().ifPresent(herbs -> {
                         NPCs.search().nameContains("Tool").nearestToPlayer().ifPresent(leprechaun -> {
                             MousePackets.queueClickPacket();
                             NPCPackets.queueWidgetOnNPC(leprechaun, herbs);
                         });
                     });
-                }
-                else
-                {
-                    Inventory.search().nameContains("Grimy").withAction("Clean").onlyUnnoted().first().ifPresent(herbs -> {
-                        NPCs.search().nameContains("Tool").nearestToPlayer().ifPresent(leprechaun -> {
-                            MousePackets.queueClickPacket();
-                            NPCPackets.queueWidgetOnNPC(leprechaun, herbs);
-                        });
-                    });
-                }
                 break;
 
         }
         //Set the random timeout when nessecery
-        if (allotmentPatch.State != AllotmentPatchState.PROCESS_HERB_PATCH && allotmentPatch.State != AllotmentPatchState.EMPTY_INVENTORY)
+        if (allotmentPatch.State != AllotmentPatchState.PROCESS_ALLOTMENT_PATCH &&
+                allotmentPatch.State != AllotmentPatchState.EMPTY_INVENTORY &&
+                allotmentPatch.State != AllotmentPatchState.HARVEST)
             setTimeout();
     }
 
@@ -1012,6 +1132,36 @@ public class BobTheFarmerPlugin extends Plugin {
             setTimeout();
     }
 
+    private boolean CompostTileObject(TileObject tileObject)
+    {
+
+        if (config.bottomlessBucket())
+        {
+            Optional<Widget> bottemlessBucket = Inventory.search().withName(BottomlessCompostBucket).first();
+
+            if (bottemlessBucket.isPresent())
+            {
+                MousePackets.queueClickPacket();
+                MousePackets.queueClickPacket();
+                ObjectPackets.queueWidgetOnTileObject(bottemlessBucket.get(), tileObject);
+                return true;
+            }
+        }
+        else
+        {
+            Optional<Widget> compost = Inventory.search().withName(config.compost().Name).first();
+
+            if (compost.isPresent())
+            {
+                MousePackets.queueClickPacket();
+                MousePackets.queueClickPacket();
+                ObjectPackets.queueWidgetOnTileObject(compost.get(), tileObject);
+                return true;
+            }
+        }
+        return false;
+    }
+
     //------------------------------------- Bank -------------------------------------
     //Checks if an item is in the keepItems list
     private boolean CompareItem(List<String> keepItems, String compItem) {
@@ -1108,6 +1258,21 @@ public class BobTheFarmerPlugin extends Plugin {
                         if (!WithdrawItemFromBank(config.herb().SeedName, patches)) {
                             Stop("Missing " + config.herb().name() + " in bank");
                             return;
+                        }
+
+                        if (config.allotment() != Allotment.NONE)
+                        {
+                            //Take out seeds
+                            if (!WithdrawItemFromBank(config.allotment().SeedName, patches * 3 * 2)) {
+                                Stop("Missing " + config.herb().name() + " in bank");
+                                return;
+                            }
+                            if (!config.whiteLilly())
+                                if (!WithdrawItemFromBank(config.allotment().ProtectionItem, patches * config.allotment().ProtectionItemAmount * 2))
+                                {
+                                    Stop("Missing " + config.herb().name() + " in bank");
+                                    return;
+                                }
                         }
 
                         //Take out compost
@@ -1622,52 +1787,10 @@ public class BobTheFarmerPlugin extends Plugin {
         {
             if (TravelPath(FaladorHerbPatch.Paths.get("Teleport1")))
             {
-                FaladorHerbPatch.PathIndex = 12;
-                setTimeout();
+                FaladorHerbPatch.State = HerbPatchState.PROCESS_HERB_PATCH;
             }
             return;
         }
-        if (FaladorHerbPatch.PathIndex == 12)
-        {
-            TileObjects.search()
-                    .nameContains("Gate")
-                    .withAction("Open")
-                    .withinDistance(6)
-                    .nearestToPlayer()
-                    .ifPresent(gate -> {
-
-                        MousePackets.queueClickPacket();
-                        TileObjectInteraction.interact(gate, "Open");
-            });
-            ResetPath();
-            FaladorHerbPatch.PathIndex = 13;
-            return;
-        }
-        if (FaladorHerbPatch.PathIndex == 13)
-        {
-            if (TravelPath(FaladorHerbPatch.Paths.get("Teleport2")))
-            {
-                FaladorHerbPatch.PathIndex = 14;
-                setTimeout();
-            }
-            return;
-        }
-        if (FaladorHerbPatch.PathIndex == 14)
-        {
-            TileObjects.search()
-                    .nameContains("Stile")
-                    .withAction("Climb-over")
-                    .withinDistance(6)
-                    .nearestToPlayer()
-                    .ifPresent(gate -> {
-
-                        MousePackets.queueClickPacket();
-                        TileObjectInteraction.interact(gate, "Climb-over");
-                    });
-            timeout = 4;
-            FaladorHerbPatch.State = HerbPatchState.PROCESS_HERB_PATCH;
-        }
-
     }
 
     //Travels to the Catherby herb patch
@@ -1701,6 +1824,9 @@ public class BobTheFarmerPlugin extends Plugin {
         if (CatherbyHerbPatch.PathIndex == 2)
         {
             CatherbyHerbPatch.State = HerbPatchState.PROCESS_HERB_PATCH;
+
+
+
         }
     }
 

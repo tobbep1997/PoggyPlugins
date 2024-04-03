@@ -1,18 +1,20 @@
 package com.piggyplugins.BobTheFarmer;
 
 public enum Allotment {
-    NONE("","","",""),
-    Snape_Grass("Snape grass seed", "Snape grass", "Jangerberries","White lily"),
+    NONE("","","",0),
+    Snape_Grass("Snape grass seed", "Snape grass", "Jangerberries",10),
 
     ;
 
     public final String SeedName;
     public final String PlantName;
     public final String ProtectionItem;
-    Allotment(String itemName, String herbName, String protectionItem, String protectionFlower)
+    public final int ProtectionItemAmount;
+    Allotment(String itemName, String herbName, String protectionItem, int protectionItemAmount)
     {
         this.SeedName = itemName;
         this.PlantName = herbName;
         this.ProtectionItem = protectionItem;
+        this.ProtectionItemAmount = protectionItemAmount;
     }
 }

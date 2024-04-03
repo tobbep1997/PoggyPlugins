@@ -45,6 +45,12 @@ public class BobTheFarmerOverlay extends OverlayPanel {
                 .rightColor(Color.WHITE)
                 .build());
         panelComponent.getChildren().add(LineComponent.builder()
+                .left(plugin.state==null || plugin.AllotmentPatchStateDisplay == null || !plugin.started ? "" : plugin.AllotmentPatchStateDisplay.Name)
+                .leftColor(new Color(255, 157, 249))
+                .right(plugin.state==null || plugin.AllotmentPatchStateDisplay == null || !plugin.started ? "" : plugin.AllotmentPatchStateDisplay.State.name())
+                .rightColor(Color.WHITE)
+                .build());
+        panelComponent.getChildren().add(LineComponent.builder()
                 .left(plugin.state==null || plugin.TreePatchStateDisplay == null || !plugin.started ? "" : plugin.TreePatchStateDisplay.Name)
                 .leftColor(new Color(255, 157, 249))
                 .right(plugin.state==null || plugin.TreePatchStateDisplay == null || !plugin.started ? "" : plugin.TreePatchStateDisplay.State.name())
