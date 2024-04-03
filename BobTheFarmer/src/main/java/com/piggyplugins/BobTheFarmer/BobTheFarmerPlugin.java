@@ -57,6 +57,7 @@ public class BobTheFarmerPlugin extends Plugin {
     public String string_state = "";
 
     //------------------------------------- Herb variables -------------------------------------
+    private final String BottomlessCompostBucket = "Bottomless compost bucket";
     boolean herbRun = false;
     private final String[] HerbTools =  {"Magic secateurs", "Spade", "Rake", "Seed dibber" };
     private BankState herbBankState = BankState.DEPOSIT;
@@ -452,8 +453,16 @@ public class BobTheFarmerPlugin extends Plugin {
 
         //Use compost on the herbs
         if (TileObjects.search().nameContains("Herbs").withAction("Inspect").first().isPresent()) {
-            if (Inventory.search().withName(config.compost().Name).first().isPresent())
-                return HerbPatchState.COMPOST;
+            if (config.bottomlessBucket())
+            {
+                if (Inventory.search().withName(BottomlessCompostBucket).first().isPresent())
+                    return HerbPatchState.COMPOST;
+            }
+            else
+            {
+                if (Inventory.search().withName(config.compost().Name).first().isPresent())
+                    return HerbPatchState.COMPOST;
+            }
         }
 
         //PROCESS_HERB_PATCH is doesen't do anything, it just indicates to the herb state machine that it should start
@@ -523,14 +532,28 @@ public class BobTheFarmerPlugin extends Plugin {
             //Use compost on the herbs
             case COMPOST:
                 TileObjects.search().nameContains("Herbs").withAction("Inspect").first().ifPresent(tileObject -> {
-                    Inventory.search().withName(config.compost().Name).first().ifPresent(item -> {
-                        MousePackets.queueClickPacket();
-                        MousePackets.queueClickPacket();
-                        ObjectPackets.queueWidgetOnTileObject(item, tileObject);
+                    if (config.bottomlessBucket())
+                    {
+                        Inventory.search().withName(BottomlessCompostBucket).first().ifPresent(item -> {
+                            MousePackets.queueClickPacket();
+                            MousePackets.queueClickPacket();
+                            ObjectPackets.queueWidgetOnTileObject(item, tileObject);
 
-                        //Set the state to note so it notes any herbs in the inventory
-                        herbPatch.State = HerbPatchState.NOTE;
-                    });
+                            //Set the state to note so it notes any herbs in the inventory
+                            herbPatch.State = HerbPatchState.NOTE;
+                        });
+                    }
+                    else
+                    {
+                        Inventory.search().withName(config.compost().Name).first().ifPresent(item -> {
+                            MousePackets.queueClickPacket();
+                            MousePackets.queueClickPacket();
+                            ObjectPackets.queueWidgetOnTileObject(item, tileObject);
+
+                            //Set the state to note so it notes any herbs in the inventory
+                            herbPatch.State = HerbPatchState.NOTE;
+                        });
+                    }
                 });
                 break;
             //Check if there is any weeds in the inventory and drop them if there is
@@ -758,7 +781,11 @@ public class BobTheFarmerPlugin extends Plugin {
             ArrayList<String> keepItems = new ArrayList<String>(Arrays.asList(HerbTools));
             keepItems.addAll(Arrays.asList(config.additionalItems().split(",")));
             keepItems.add(config.herb().SeedName);
-            keepItems.add(config.compost().Name);
+
+            if (config.bottomlessBucket())
+                keepItems.add(BottomlessCompostBucket);
+            else
+                keepItems.add(config.compost().Name);
 
             //Depending on what patch is selected differente tools and teleports might be needed
             if (config.enableArdougne())
@@ -827,10 +854,22 @@ public class BobTheFarmerPlugin extends Plugin {
                         }
 
                         //Take out compost
-                        if (!WithdrawItemFromBank(config.compost().Name, patches)) {
-                            Stop("Missing " + config.compost() + " in bank");
-                            return;
+                        if (config.bottomlessBucket())
+                        {
+                            if (!WithdrawItemFromBank(BottomlessCompostBucket, 1)) {
+                                Stop("Missing " + BottomlessCompostBucket + " in bank");
+                                return;
+                            }
                         }
+                        else
+                        {
+                            if (!WithdrawItemFromBank(config.compost().Name, patches)) {
+                                Stop("Missing " + config.compost() + " in bank");
+                                return;
+                            }
+                        }
+
+
 
                         //Take out additional items
                         String[] additionalItems = config.additionalItems().split(",");

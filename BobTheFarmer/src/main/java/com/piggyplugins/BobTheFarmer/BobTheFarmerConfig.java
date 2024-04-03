@@ -222,6 +222,14 @@ public interface BobTheFarmerConfig extends Config {
         return 2;
     }
     @ConfigItem(
+            keyName = "bottomlessBucket",
+            name = "Use Bottomless Bucket",
+            description = "",
+            position = -2,
+            section = herbPatches
+    )
+    default boolean bottomlessBucket() { return false; }
+    @ConfigItem(
             name = "Ardougne herb patch",
             keyName = "enableArdougne",
             description = "Requires Ardougne cloak 2 or higher",
