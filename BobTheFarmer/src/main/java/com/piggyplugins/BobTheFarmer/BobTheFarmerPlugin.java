@@ -865,6 +865,9 @@ public class BobTheFarmerPlugin extends Plugin {
                 !config.whiteLilly())
             return AllotmentPatchState.PROTECT;
 
+        if (Inventory.search().nameContains(config.allotment().PlantName).onlyUnnoted().first().isPresent())
+            return AllotmentPatchState.NOTE;
+
         //PROCESS_HERB_PATCH is doesen't do anything, it just indicates to the allotment state machine that it should start
         return AllotmentPatchState.DONE;
     }
