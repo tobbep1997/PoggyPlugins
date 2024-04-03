@@ -27,6 +27,9 @@ import org.apache.commons.lang3.RandomUtils;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.awt.datatransfer.StringSelection;
+import java.awt.Toolkit;
+import java.awt.datatransfer.Clipboard;
 
 
 
@@ -72,6 +75,11 @@ public class BobTheFarmerPlugin extends Plugin {
     private HerbPatch PortPhasmatysHerbPatch = null;
     private HerbPatch TrollStrongholdHerbPatch = null;
     private HerbPatch WeissHerbPatch = null;
+
+    //------------------------------------- Allotment pathces -------------------------------------
+    AllotmentPatch AllotmentPatchStateDisplay = null;
+    private AllotmentPatch CatherbyNorthAllotmentPatch = null;
+    private AllotmentPatch CatherbySouthAllotmentPatch = null;
 
     //------------------------------------- Tree variables -------------------------------------
     boolean treeRun = false;
@@ -133,13 +141,25 @@ public class BobTheFarmerPlugin extends Plugin {
             return;
         }
 
+        if (config.debugStateMachine())
+        {
+            FarmAllotment(CatherbyNorthAllotmentPatch);
+
+            return;
+        }
+
         //Reset herb run data if not on a herb run
         if (!herbRun)
+        {
             ResetHerbPatchStates();
+            ResetAllotmentPatchStates();
+        }
 
         //Reset tree run data if not on a tree run
         if (!treeRun)
             ResetTreePatchStates();
+
+
 
         //Get the next step
         state = getNextState();
@@ -174,6 +194,19 @@ public class BobTheFarmerPlugin extends Plugin {
         TrollStrongholdHerbPatch = new HerbPatch("Troll Stronghold", new String[] {});
 
         WeissHerbPatch = new HerbPatch("Weiss", new String[] {});
+    }
+    //Resets all allotment run data to its default state
+    private void ResetAllotmentPatchStates() {
+        CatherbyNorthAllotmentPatch = new AllotmentPatch(
+                "Catherby",
+                new WorldArea(new WorldPoint(2804, 3465, 0), 11, 4),
+                "Pay (north)",
+                new String[] {});
+        CatherbySouthAllotmentPatch = new AllotmentPatch(
+                "Catherby",
+                new WorldArea(new WorldPoint(2804, 3458, 0), 11, 4),
+                "Pay (south)",
+                new String[] {});
     }
     //Resets all tree run data to its default state
     private void ResetTreePatchStates() {
@@ -419,7 +452,7 @@ public class BobTheFarmerPlugin extends Plugin {
             if (Inventory.search().withAction("Clean").onlyUnnoted().first().isPresent() && config.cleanHerbs())
                 return HerbPatchState.CLEAN_HERBS;
             if (Inventory.search().nameContains(config.herb().HerbName).onlyUnnoted().first().isPresent())
-                return HerbPatchState.MANAGE_INVETORY;
+                return HerbPatchState.MANAGE_INVENTORY;
             else
                 Stop("Invetory full");
         }
@@ -591,7 +624,7 @@ public class BobTheFarmerPlugin extends Plugin {
                 }
 
                 break;
-            case MANAGE_INVETORY:
+            case MANAGE_INVENTORY:
                 if (config.cleanHerbs())
                 {
                     Inventory.search().withName(config.herb().HerbName).onlyUnnoted().first().ifPresent(herbs -> {
@@ -615,6 +648,230 @@ public class BobTheFarmerPlugin extends Plugin {
         }
         //Set the random timeout when nessecery
         if (herbPatch.State != HerbPatchState.PROCESS_HERB_PATCH && herbPatch.State != HerbPatchState.EMPTY_INVENTORY)
+            setTimeout();
+    }
+
+    //------------------------------------- Allotment -------------------------------------
+    //Get the next allotment step for the herb state machine
+    private AllotmentPatchState FarmAllotmentState(AllotmentPatch allotmentPatch, WorldPoint min, WorldPoint max) {
+        //Check if there is any weeds in the inventory and drop them if there is
+        if (Inventory.search().withName("Weeds").first().isPresent())
+            return AllotmentPatchState.EMPTY_INVENTORY;
+
+        //Check if inventory is full and note any allotments that are in the invetory
+        if (Inventory.full())
+        {
+            if (Inventory.search().nameContains(config.allotment().PlantName).onlyUnnoted().first().isPresent())
+                return AllotmentPatchState.MANAGE_INVENTORY;
+            else
+                Stop("Invetory full");
+        }
+
+        //Check if the patch is not fully grown then mark the patch as done
+        if (TileObjects.search().withinBounds(min, max).withName("plant").first().isPresent() && allotmentPatch.State != AllotmentPatchState.PLANTING)
+            if (!Arrays.asList(TileObjectQuery.getObjectComposition(TileObjects.search().withName("plant").first().get()).getActions()).contains("Pick"))
+                return AllotmentPatchState.NOTE;
+
+        //Harvest allotments if there is any
+        if (TileObjects.search().withinBounds(min, max).withName("plant").withAction("Pick").first().isPresent())
+            return AllotmentPatchState.HARVEST;
+
+        //Clear dead allotments
+        if (TileObjects.search().withinBounds(min, max).withAction("Clear").first().isPresent())
+            return AllotmentPatchState.CLEAR;
+
+        //Rake allotment patch
+        if (TileObjects.search().withinBounds(min, max).nameContains("Allotment").withAction("Rake").first().isPresent())
+            return AllotmentPatchState.RAKE;
+
+
+        //Check if allotment patch is ready for planting
+        if (TileObjects.search().withinBounds(min, max).nameContains("Allotment").withAction("Inspect").first().isPresent())
+            if (Inventory.search().withName(config.allotment().SeedName).first().isPresent())
+                return AllotmentPatchState.PLANTING;
+
+
+        //Use compost on the allotments
+        if (TileObjects.search().withinBounds(min, max).nameContains("seedling").withAction("Inspect").first().isPresent()) {
+            if (config.bottomlessBucket())
+            {
+                if (Inventory.search().withName(BottomlessCompostBucket).first().isPresent())
+                    return AllotmentPatchState.COMPOST;
+            }
+            else
+            {
+                if (Inventory.search().withName(config.compost().Name).first().isPresent())
+                    return AllotmentPatchState.COMPOST;
+            }
+        }
+        //Use compost on the allotments
+        if (TileObjects.search().withinBounds(min, max).nameContains("plant").withAction("Inspect").first().isPresent()) {
+            if (config.bottomlessBucket())
+            {
+                if (Inventory.search().withName(BottomlessCompostBucket).first().isPresent())
+                    return AllotmentPatchState.COMPOST;
+            }
+            else
+            {
+                if (Inventory.search().withName(config.compost().Name).first().isPresent())
+                    return AllotmentPatchState.COMPOST;
+            }
+        }
+
+        //PROCESS_HERB_PATCH is doesen't do anything, it just indicates to the allotment state machine that it should start
+        return AllotmentPatchState.PROCESS_HERB_PATCH;
+    }
+
+    //Execute Allotment state machine
+    private void FarmAllotment(AllotmentPatch allotmentPatch) {
+
+        if (config.debugStateMachine() && allotmentPatch.State.Index < 2)
+            allotmentPatch.State = AllotmentPatchState.PROCESS_HERB_PATCH;
+
+        if (allotmentPatch.State.Index < 2 || allotmentPatch.State == AllotmentPatchState.DONE)
+            return;
+
+        WorldPoint min = new WorldPoint(
+                allotmentPatch.AllotmentPatchArea.getX(),
+                allotmentPatch.AllotmentPatchArea.getY(),
+                allotmentPatch.AllotmentPatchArea.getPlane());
+
+        WorldPoint max = new WorldPoint(
+                allotmentPatch.AllotmentPatchArea.getX() + allotmentPatch.AllotmentPatchArea.getWidth(),
+                allotmentPatch.AllotmentPatchArea.getY() + allotmentPatch.AllotmentPatchArea.getHeight(),
+                allotmentPatch.AllotmentPatchArea.getPlane());
+
+        //Get the next state
+        allotmentPatch.State = FarmAllotmentState(allotmentPatch, min, max);
+        string_state = allotmentPatch.State.name();
+
+        //Set the display variable so the user can see whats going on
+        SetDisplayStateAllotment(allotmentPatch);
+
+        if (config.debugStateMachine())
+            return;
+
+        //allotment state machine
+        switch (allotmentPatch.State)
+        {
+            //Harvest allotments if there is any
+            case HARVEST:
+                TileObjects.search().withName("Plant").withAction("Pick").first().ifPresent(herb -> {
+                    MousePackets.queueClickPacket();
+                    TileObjectInteraction.interact(herb, "Pick");
+                });
+                break;
+            //Clear out dead allotments
+            case CLEAR:
+                //Plant new allotments
+                TileObjects.search().nameContains("Dead herbs").withAction("Clear").first().ifPresent(tileObject -> {
+                    MousePackets.queueClickPacket();
+                    TileObjectInteraction.interact(tileObject, "Clear");
+                });
+                break;
+            //Rake the allotment patch
+            case RAKE:
+                TileObjects.search().nameContains("Herb patch").withAction("Rake").first().ifPresent(tileObject -> {
+                    MousePackets.queueClickPacket();
+                    TileObjectInteraction.interact(tileObject, "Rake");
+                });
+                break;
+            //Plant allotments on allotment patch
+            case PLANTING:
+                TileObjects.search().nameContains("Herb patch").withAction("Inspect").first().ifPresent(tileObject -> {
+                    Inventory.search().withName(config.herb().SeedName).first().ifPresent(item -> {
+                        MousePackets.queueClickPacket();
+                        MousePackets.queueClickPacket();
+                        ObjectPackets.queueWidgetOnTileObject(item, tileObject);
+                    });
+                });
+                break;
+            //Use compost on the allotments
+            case COMPOST:
+                TileObjects.search().nameContains("Herbs").withAction("Inspect").first().ifPresent(tileObject -> {
+                    if (config.bottomlessBucket())
+                    {
+                        Inventory.search().withName(BottomlessCompostBucket).first().ifPresent(item -> {
+                            MousePackets.queueClickPacket();
+                            MousePackets.queueClickPacket();
+                            ObjectPackets.queueWidgetOnTileObject(item, tileObject);
+
+                            //Set the state to note so it notes any allotments in the inventory
+                            allotmentPatch.State = AllotmentPatchState.NOTE;
+                        });
+                    }
+                    else
+                    {
+                        Inventory.search().withName(config.compost().Name).first().ifPresent(item -> {
+                            MousePackets.queueClickPacket();
+                            MousePackets.queueClickPacket();
+                            ObjectPackets.queueWidgetOnTileObject(item, tileObject);
+
+                            //Set the state to note so it notes any allotments in the inventory
+                            allotmentPatch.State = AllotmentPatchState.NOTE;
+                        });
+                    }
+                });
+                break;
+            //Check if there is any weeds in the inventory and drop them if there is
+            case EMPTY_INVENTORY:
+                Inventory.search().withName("Weeds").first().ifPresent(weeds -> {
+                    MousePackets.queueClickPacket();
+                    InventoryInteraction.useItem(weeds, "Drop");
+                });
+                break;
+            //Note allotments on Tool Leprechaun
+            case NOTE:
+                if (config.cleanHerbs())
+                {
+                    Inventory.search().withName(config.herb().HerbName).onlyUnnoted().first().ifPresentOrElse(herbs -> {
+                        NPCs.search().nameContains("Tool").nearestToPlayer().ifPresent(leprechaun -> {
+                            MousePackets.queueClickPacket();
+                            NPCPackets.queueWidgetOnNPC(leprechaun, herbs);
+                        });
+                    }, () -> {
+                        //After noting set the patch to done
+                        allotmentPatch.State = AllotmentPatchState.DONE;
+                    });
+                }
+                else
+                {
+                    Inventory.search().nameContains("Grimy").withAction("Clean").onlyUnnoted().first().ifPresentOrElse(herbs -> {
+                        NPCs.search().nameContains("Tool").nearestToPlayer().ifPresent(leprechaun -> {
+                            MousePackets.queueClickPacket();
+                            NPCPackets.queueWidgetOnNPC(leprechaun, herbs);
+                        });
+                    }, () -> {
+                        //After noting set the patch to done
+                        allotmentPatch.State = AllotmentPatchState.DONE;
+                    });
+                }
+
+                break;
+            case MANAGE_INVENTORY:
+                if (config.cleanHerbs())
+                {
+                    Inventory.search().withName(config.herb().HerbName).onlyUnnoted().first().ifPresent(herbs -> {
+                        NPCs.search().nameContains("Tool").nearestToPlayer().ifPresent(leprechaun -> {
+                            MousePackets.queueClickPacket();
+                            NPCPackets.queueWidgetOnNPC(leprechaun, herbs);
+                        });
+                    });
+                }
+                else
+                {
+                    Inventory.search().nameContains("Grimy").withAction("Clean").onlyUnnoted().first().ifPresent(herbs -> {
+                        NPCs.search().nameContains("Tool").nearestToPlayer().ifPresent(leprechaun -> {
+                            MousePackets.queueClickPacket();
+                            NPCPackets.queueWidgetOnNPC(leprechaun, herbs);
+                        });
+                    });
+                }
+                break;
+
+        }
+        //Set the random timeout when nessecery
+        if (allotmentPatch.State != AllotmentPatchState.PROCESS_HERB_PATCH && allotmentPatch.State != AllotmentPatchState.EMPTY_INVENTORY)
             setTimeout();
     }
 
@@ -1870,6 +2127,11 @@ public class BobTheFarmerPlugin extends Plugin {
         HerbPatchStateDisplay = state;
     }
 
+    //Set the allotment display for the user
+    private void SetDisplayStateAllotment(AllotmentPatch state) {
+        AllotmentPatchStateDisplay = state;
+    }
+
     //Set the tree display for the user
     private void SetDisplayStateTree(TreePatch state) {
         TreePatchStateDisplay = state;
@@ -1920,6 +2182,9 @@ public class BobTheFarmerPlugin extends Plugin {
     //------------------------------------- Hotkey functions -------------------------------------
     public void Debug() {
         debugPoint = client.getLocalPlayer().getWorldLocation();
+        StringSelection stringSelection = new StringSelection("WorldPoint(" + debugPoint.getX() + ", " + debugPoint.getY() + ", " + debugPoint.getPlane() + ")");
+        Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+        clipboard.setContents(stringSelection, null);
     }
     public void herbRun() {
         if (client.getGameState() != GameState.LOGGED_IN) {

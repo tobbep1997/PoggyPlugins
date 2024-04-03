@@ -1,8 +1,6 @@
 package com.piggyplugins.BobTheFarmer;
 
-//Possible herb patch states
-public enum HerbPatchState
-{
+public enum AllotmentPatchState {
     NOT_STARTED(0),
     TRAVEL(1),
     PROCESS_HERB_PATCH(2),
@@ -12,13 +10,13 @@ public enum HerbPatchState
     PLANTING(6),
     COMPOST(7),
     EMPTY_INVENTORY(8),
-    CLEAN_HERBS(9),
-    NOTE(10),
-    MANAGE_INVENTORY(10),
-    DONE(11);
+    PROTECT(10),
+    NOTE(11),
+    MANAGE_INVENTORY(11),
+    DONE(12);
 
     public final int Index;
-    private HerbPatchState(int index)
+    private AllotmentPatchState(int index)
     {
         this.Index = index;
     }

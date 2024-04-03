@@ -188,6 +188,17 @@ public interface BobTheFarmerConfig extends Config {
         return Herb.Guam_leaf;
     }
     @ConfigItem(
+            keyName = "allotment",
+            name = "Allotment",
+            description = "",
+            position = -4,
+            section = herbPatches
+
+    )
+    default Allotment allotment() {
+        return Allotment.NONE;
+    }
+    @ConfigItem(
             keyName = "compost",
             name = "Compost",
             description = "",
