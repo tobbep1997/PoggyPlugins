@@ -959,10 +959,12 @@ public class BobTheFarmerPlugin extends Plugin {
                     Widgets.search().withTextContains("Pay").hiddenState(false).first().ifPresentOrElse(payWidget -> {
                         MousePackets.queueClickPacket();
                         WidgetPackets.queueResumePause(payWidget.getId(), 1);
-                        allotmentPatch.State = AllotmentPatchState.NOTE;
                     }, () -> {
                         MousePackets.queueClickPacket();
                         NPCInteraction.interact(npc, allotmentPatch.NPCInteractionWord);
+                    });
+                    Widgets.search().withTextContains("Leave it with me").hiddenState(false).first().ifPresent(widget -> {
+                        allotmentPatch.State = AllotmentPatchState.DONE;
                     });
                     Widgets.search().withTextContains("already looking after that").hiddenState(false).first().ifPresent(widget -> {
                         allotmentPatch.State = AllotmentPatchState.NOTE;
@@ -1118,10 +1120,12 @@ public class BobTheFarmerPlugin extends Plugin {
                     Widgets.search().withTextContains("Pay").hiddenState(false).first().ifPresentOrElse(payWidget -> {
                         MousePackets.queueClickPacket();
                         WidgetPackets.queueResumePause(payWidget.getId(), 1);
-                        treePatch.State = TreePatchState.DONE;
                     }, () -> {
                         MousePackets.queueClickPacket();
                         NPCInteraction.interact(npc, treePatch.Name != "Farming Guild" ? "Pay" : "Pay (tree patch)");
+                    });
+                    Widgets.search().withTextContains("Leave it with me").hiddenState(false).first().ifPresent(widget -> {
+                        treePatch.State = TreePatchState.DONE;
                     });
                     Widgets.search().withTextContains("already looking after that patch").hiddenState(false).first().ifPresent(widget -> {
                         treePatch.State = TreePatchState.DONE;
@@ -1606,13 +1610,9 @@ public class BobTheFarmerPlugin extends Plugin {
     private TileObject BankCloseBy(int distance) {
         Optional<TileObject> bankBooth = null;
         bankBooth = TileObjects.search().withAction("Bank").withinDistance(distance).nearestToPlayer();
-        if (bankBooth.isPresent())
-            return bankBooth.get();
 
         Optional<TileObject> bankChest = null;
         bankChest = TileObjects.search().withName("Bank chest").withinDistance(distance).nearestToPlayer();
-        if (bankChest.isPresent())
-            return bankChest.get();
 
         if (bankBooth.isPresent() && bankChest.isPresent())
         {
