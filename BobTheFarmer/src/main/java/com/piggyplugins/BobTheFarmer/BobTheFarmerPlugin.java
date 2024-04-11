@@ -1021,10 +1021,8 @@ public class BobTheFarmerPlugin extends Plugin {
             if (Inventory.search().withName(config.tree().Sapling).first().isPresent())
                 return TreePatchState.PLANT;
         //Pay to protect
-        if (TileObjects.search().withinBounds(min, max).nameContains("sapling").withAction("Inspect").nearestToPlayer().isPresent())
-            return TreePatchState.PROTECT;
-        //Pay to protect
-        if (TileObjects.search().withinBounds(min, max).nameContains("tree").withAction("Inspect").nearestToPlayer().isPresent())
+        if (TileObjects.search().withinBounds(min, max).nameContains("sapling").withAction("Inspect").nearestToPlayer().isPresent() ||
+            TileObjects.search().withinBounds(min, max).nameContains("tree").withAction("Inspect").nearestToPlayer().isPresent())
             return TreePatchState.PROTECT;
 
         //PROCESS_TREE_PATCH is doesen't do anything, it just indicates to the herb state machine that it should start
@@ -1117,6 +1115,12 @@ public class BobTheFarmerPlugin extends Plugin {
             //Pay to have the tree protected
             case PROTECT:
                 NPCs.search().withAction(treePatch.Name != "Farming Guild" ? "Pay" : "Pay (tree patch)").nearestToPlayer().ifPresent(npc -> {
+                    if (Widgets.search().withTextContains("Leave it with me").hiddenState(false).first().isPresent() ||
+                            Widgets.search().withTextContains("already looking after that patch").hiddenState(false).first().isPresent())
+                    {
+                        treePatch.State = TreePatchState.DONE;
+                        return;
+                    }
                     Widgets.search().withTextContains("Pay").hiddenState(false).first().ifPresentOrElse(payWidget -> {
                         MousePackets.queueClickPacket();
                         WidgetPackets.queueResumePause(payWidget.getId(), 1);
@@ -1124,12 +1128,7 @@ public class BobTheFarmerPlugin extends Plugin {
                         MousePackets.queueClickPacket();
                         NPCInteraction.interact(npc, treePatch.Name != "Farming Guild" ? "Pay" : "Pay (tree patch)");
                     });
-                    Widgets.search().withTextContains("Leave it with me").hiddenState(false).first().ifPresent(widget -> {
-                        treePatch.State = TreePatchState.DONE;
-                    });
-                    Widgets.search().withTextContains("already looking after that patch").hiddenState(false).first().ifPresent(widget -> {
-                        treePatch.State = TreePatchState.DONE;
-                    });
+
                 });
                 break;
         }
@@ -1478,7 +1477,6 @@ public class BobTheFarmerPlugin extends Plugin {
                 case WITHDRAW:
                     if (!getWithdrawNotes())
                     {
-
                         WithdrawBankTeleport();
 
                         //Take out basic tools
