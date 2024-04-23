@@ -221,7 +221,9 @@ public class PowerSkillerPlugin extends Plugin {
         String npcName = config.objectToInteract();
         NPCs.search().withName(npcName).nearestToPlayer().ifPresent(npc -> {
             NPCComposition comp = client.getNpcDefinition(npc.getId());
-            if (Arrays.stream(comp.getActions()).anyMatch(action -> action.equalsIgnoreCase(config.expectedAction()))) {
+            if (Arrays.stream(comp.getActions())
+                    .filter(Objects::nonNull)
+                    .anyMatch(action -> action.equalsIgnoreCase(config.expectedAction()))) {
                 NPCInteraction.interact(npc, config.expectedAction()); // For fishing spots ?
             } else {
                 NPCInteraction.interact(npc, comp.getActions()[0]);
@@ -309,7 +311,7 @@ public class PowerSkillerPlugin extends Plugin {
             return;
         }
         started = !started;
-        if(started){
+        if(!started){
             breakHandler.stopPlugin(this);
         }else{
             breakHandler.startPlugin(this);
