@@ -33,6 +33,24 @@ public interface BobTheWizardConfig extends Config {
     }
 
     @ConfigItem(
+            keyName = "trainingMethod",
+            name = "Training method",
+            description = "",
+            position = -2
+    )
+    default TrainingMethod trainingMethod() {
+        return TrainingMethod.TeleAlc;
+    }
+    @ConfigItem(
+            keyName = "plank",
+            name = "Plank",
+            description = "",
+            position = -2
+    )
+    default String plank() {
+        return "";
+    }
+    @ConfigItem(
             keyName = "alc",
             name = "High Alc",
             description = "",

@@ -6,7 +6,9 @@ public enum State {
     CAST_TELEPORT,
     HIGH_ALCING,
     TELEPORTING,
+    MAKE_PLANK,
+    BANK,
     TIMEOUT,
-    TELEPORT_TIMEOUT,
+    NONE,
     HANDLE_BREAK,
 }

@@ -1,14 +1,19 @@
 package com.piggyplugins.BobTheWizard;
 
-import com.example.EthanApiPlugin.Collections.Inventory;
-import com.example.EthanApiPlugin.Collections.Widgets;
+import com.example.EthanApiPlugin.Collections.*;
+import com.example.EthanApiPlugin.Collections.query.TileObjectQuery;
 import com.example.EthanApiPlugin.EthanApiPlugin;
+import com.example.InteractionApi.BankInteraction;
+import com.example.InteractionApi.BankInventoryInteraction;
+import com.example.InteractionApi.TileObjectInteraction;
 import com.example.PacketUtils.WidgetInfoExtended;
 import com.example.Packets.MousePackets;
 import com.example.Packets.WidgetPackets;
 import com.google.inject.Provides;
+import com.piggyplugins.PiggyUtils.API.BankUtil;
 import com.piggyplugins.PiggyUtils.BreakHandler.ReflectBreakHandler;
 import net.runelite.api.*;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.config.ConfigManager;
@@ -22,7 +27,11 @@ import net.runelite.client.util.HotkeyListener;
 import com.google.inject.Inject;
 import org.apache.commons.lang3.RandomUtils;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 @PluginDescriptor(
@@ -50,6 +59,7 @@ public class BobTheWizardPlugin extends Plugin {
     private boolean alced;
     private final int TELEPORT_ANIMATION_ID = 714;
     private final int HIGH_ALC_ANIMATION_ID = 713;
+    BankState bankState;
 
 
     private final String Dodgy_Necklace = "Dodgy necklace";
@@ -77,6 +87,7 @@ public class BobTheWizardPlugin extends Plugin {
     private void onGameTick(GameTick event) {
         if (!EthanApiPlugin.loggedIn() || !started || breakHandler.isBreakActive(this)) {
             // We do an early return if the user isn't logged in
+            bankState = BankState.DEPOSIT;
             return;
         }
 
@@ -85,6 +96,9 @@ public class BobTheWizardPlugin extends Plugin {
     }
 
     private void handleState() {
+        if (state == State.MAKE_PLANK)
+            bankState = BankState.DEPOSIT;
+
         switch (state) {
             case HANDLE_BREAK:
                 breakHandler.startBreak(this);
@@ -106,6 +120,12 @@ public class BobTheWizardPlugin extends Plugin {
                     setTeleportTimeout();
                     alced = true;
                 }
+                break;
+            case MAKE_PLANK:
+                MakePlank();
+                break;
+            case BANK:
+                Restock();
                 break;
             case CAST_TELEPORT:
                 teleport();
@@ -135,12 +155,167 @@ public class BobTheWizardPlugin extends Plugin {
             return State.HANDLE_BREAK;
         }
 
-        if (alced || config.alc().isEmpty())
+        if (config.trainingMethod() == TrainingMethod.TeleAlc)
         {
-            return State.CAST_TELEPORT;
+            if (alced || config.alc().isEmpty())
+            {
+                return State.CAST_TELEPORT;
+            }
+
+            return State.CAST_HIGH_ALC;
         }
 
-        return State.CAST_HIGH_ALC;
+        if (config.trainingMethod() == TrainingMethod.PlankMake)
+        {
+            if (Inventory.search().nameContains(config.plank()).first().isPresent())
+                return State.MAKE_PLANK;
+            else
+                return State.BANK;
+        }
+
+        return State.NONE;
+    }
+    private void Restock() {
+
+        //Check if bank is open
+        if (Bank.isOpen()) {
+            //Add all items that are needed to the keepItems List
+            ArrayList<String> keepItems = new ArrayList<String>();
+            keepItems.add("Rune pouch");
+            keepItems.add("Coins");
+            keepItems.add(config.plank());
+
+            //Banking state machine
+            switch (bankState){
+
+                //Deposit items that are not needed
+                case DEPOSIT:
+                    List<Widget> bankInv = BankInventory.search().filter(widget -> !CompareItem(keepItems, widget.getName())).result();
+                    for (Widget item : bankInv) {
+                        MousePackets.queueClickPacket();
+                        BankInventoryInteraction.useItem(item, "Deposit-All");
+                    }
+                    bankState = BankState.WITHDRAW;
+                    break;
+                //Withdraw items in non noted form
+                case WITHDRAW:
+                        //Take out coins
+                        if (!WithdrawItemFromBank("Coins", -1)) {
+                            started = false;
+                            return;
+                        }
+                        if (!WithdrawItemFromBank(config.plank(), Inventory.getEmptySlots())) {
+                            started = false;
+                            return;
+                        }
+                    break;
+            }
+            setTimeout();
+        }
+        else {
+            OpenBank();
+        }
+    }
+
+    private int CalculateDistance(int x1, int y1, int x2, int y2)
+    {
+        return (int)Math.round(Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2)));
+    }
+
+    private TileObject BankCloseBy(int distance) {
+        Optional<TileObject> bankBooth = null;
+        bankBooth = TileObjects.search().withAction("Bank").withinDistance(distance).nearestToPlayer();
+
+        Optional<TileObject> bankChest = null;
+        bankChest = TileObjects.search().withName("Bank chest").withinDistance(distance).nearestToPlayer();
+
+        if (bankBooth.isPresent() && bankChest.isPresent())
+        {
+            WorldPoint playerPos = client.getLocalPlayer().getWorldLocation();
+
+            int bbDist = CalculateDistance(playerPos.getX(), playerPos.getY(), bankBooth.get().getX(), bankBooth.get().getY());
+            int bcDist = CalculateDistance(playerPos.getX(), playerPos.getY(), bankChest.get().getX(), bankChest.get().getY());
+
+            return bbDist < bcDist ? bankBooth.get() : bankChest.get();
+        }
+        if (bankBooth.isPresent())
+            return bankBooth.get();
+        if (bankChest.isPresent())
+            return bankChest.get();
+        return null;
+    }
+
+    //Returns the interaction of a bank object
+    private String GetBankInteraction(TileObject bankObject) {
+        ObjectComposition objectComposition = TileObjectQuery.getObjectComposition(bankObject);
+        return Arrays.stream(objectComposition.getActions()).anyMatch(action -> action != null && action.toLowerCase().contains("bank")) ? "Bank" : "Use";
+    }
+
+    //Opens the closes bank
+    private void OpenBank() {
+        TileObject bankBooth = BankCloseBy(20);
+        if (bankBooth != null) {
+            MousePackets.queueClickPacket();
+            TileObjectInteraction.interact(bankBooth, GetBankInteraction(bankBooth));
+        }
+    }
+
+    //Take out a set amount of items from the bank
+    //This double checks if you have any items in the invetory already so it dosen't withdraw too much
+    private boolean WithdrawItemFromBank(String item, int amount) {
+        AtomicBoolean succeeded = new AtomicBoolean(false);
+        BankUtil.nameContainsNoCase(item).first().ifPresentOrElse(widget ->
+                {
+                    int localAmount = amount -
+                            (
+                                    Inventory.search().withName(item).first().isPresent() ?
+                                            (
+                                                    Inventory.search().isStackable(Inventory.search().withName(item).first().get()) ?
+                                                            Inventory.search().withName(item).first().get().getItemQuantity() :
+                                                            Inventory.search().withName(item).result().size()
+                                            ) : 0
+                            );
+
+                    if (amount < 0)
+                        localAmount = BankUtil.getItemAmount(widget.getItemId());
+
+                    if (localAmount > 0)
+                    {
+                        MousePackets.queueClickPacket();
+                        BankInteraction.withdrawX(widget, localAmount);
+                    }
+
+                    succeeded.set(true);
+                },
+                () -> {
+                    succeeded.set(false);
+                });
+
+        if (Inventory.search().withName(item).first().isPresent())
+            succeeded.set(true);
+
+        return succeeded.get();
+    }
+
+    private boolean CompareItem(List<String> keepItems, String compItem) {
+        for (String item : keepItems)
+        {
+            if (compItem.contains(item))
+                return true;
+        }
+        return false;
+    }
+
+    private void MakePlank()
+    {
+        Widget PlankMake = client.getWidget(WidgetInfoExtended.SPELL_PLANK_MAKE.getPackedId());
+        if (PlankMake != null) {
+            Inventory.search().nameContains(config.plank()).first().ifPresentOrElse(item -> {
+                MousePackets.queueClickPacket();
+                WidgetPackets.queueWidgetOnWidget(PlankMake, item);
+            }, null);
+            setTimeout();
+        }
     }
 
     private void alc()
