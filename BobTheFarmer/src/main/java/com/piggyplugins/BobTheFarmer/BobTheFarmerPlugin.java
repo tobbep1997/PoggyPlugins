@@ -1134,7 +1134,7 @@ public class BobTheFarmerPlugin extends Plugin {
         }
 
         //Set the random timeout when nessecery
-        if (treePatch.State != TreePatchState.PROCESS_TREE_PATCH && treePatch.State != TreePatchState.EMPTY_INVENTORY && treePatch.State != TreePatchState.PAY)
+        if (treePatch.State != TreePatchState.PROCESS_TREE_PATCH && treePatch.State != TreePatchState.EMPTY_INVENTORY && treePatch.State != TreePatchState.PAY && treePatch.State != TreePatchState.PROTECT)
             setTimeout();
     }
 

@@ -3,7 +3,7 @@ package com.piggyplugins.BobTheFarmer;
 public enum Allotment {
     NONE("","","",0),
     Snape_Grass("Snape grass seed", "Snape grass", "Jangerberries",10),
-
+    Watermelon("Watermelon seed", "Watermelon", "Nasturtiums", 10),
     ;
 
     public final String SeedName;
