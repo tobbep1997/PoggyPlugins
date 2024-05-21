@@ -183,6 +183,8 @@ public class BobTheWizardPlugin extends Plugin {
             ArrayList<String> keepItems = new ArrayList<String>();
             keepItems.add("Rune pouch");
             keepItems.add("Coins");
+            keepItems.add("Astral rune");
+            keepItems.add("Nature rune");
             keepItems.add(config.plank());
 
             //Banking state machine

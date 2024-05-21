@@ -8,12 +8,12 @@ import net.runelite.client.ui.overlay.components.TitleComponent;
 
 import java.awt.*;
 
-public class BobTheTemplateOverlay extends OverlayPanel {
+public class BobTheLazyNMZOverlay extends OverlayPanel {
 
-    private final BobTheTemplatePlugin plugin;
+    private final BobTheLazyNMZPlugin plugin;
 
     @Inject
-    private BobTheTemplateOverlay(BobTheTemplatePlugin plugin) {
+    private BobTheLazyNMZOverlay(BobTheLazyNMZPlugin plugin) {
         super(plugin);
         this.plugin = plugin;
         setPosition(OverlayPosition.BOTTOM_LEFT);
@@ -25,23 +25,24 @@ public class BobTheTemplateOverlay extends OverlayPanel {
     public Dimension render(Graphics2D graphics) {
         panelComponent.setPreferredSize(new Dimension(200, 320));
         panelComponent.getChildren().add(TitleComponent.builder()
-                .text("Bob The Template")
+                .text("Bob The Lazy NMZ")
                 .color(new Color(255, 157, 249))
                 .build());
         panelComponent.getChildren().add(TitleComponent.builder()
                 .text(plugin.started ? "Running" : "Paused")
                 .color(plugin.started ? Color.GREEN : Color.RED)
                 .build());
+
         panelComponent.getChildren().add(LineComponent.builder()
-                .left("State: ")
+                .left("Strength: ")
                 .leftColor(new Color(255, 157, 249))
-                .right(plugin.state==null || !plugin.started ? "STOPPED" : plugin.state.name())
+                .right(plugin.BoostedStrength + " " + plugin.Strength)
                 .rightColor(Color.WHITE)
                 .build());
         panelComponent.getChildren().add(LineComponent.builder()
-                .left("DEBUG: ")
+                .left("Hitpoints: ")
                 .leftColor(new Color(255, 157, 249))
-                .right(plugin.debug)
+                .right(plugin.BoostedHitpoints + " " + plugin.Hitpoints)
                 .rightColor(Color.WHITE)
                 .build());
 

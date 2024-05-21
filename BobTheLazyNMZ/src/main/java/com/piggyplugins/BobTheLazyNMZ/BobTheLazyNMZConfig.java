@@ -2,8 +2,8 @@ package com.piggyplugins.BobTheLazyNMZ;
 
 import net.runelite.client.config.*;
 
-@ConfigGroup("BobTheTemplate")
-public interface BobTheTemplateConfig extends Config {
+@ConfigGroup("BobTheLazyNMZ")
+public interface BobTheLazyNMZConfig extends Config {
     @ConfigSection(
             name = "Tick Delays",
             description = "Configuration for delays added to skilling activities",

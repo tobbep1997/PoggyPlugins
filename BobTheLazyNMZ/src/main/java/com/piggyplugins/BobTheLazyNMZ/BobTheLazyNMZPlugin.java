@@ -3,17 +3,13 @@ package com.piggyplugins.BobTheLazyNMZ;
 import com.example.EthanApiPlugin.Collections.*;
 import com.example.EthanApiPlugin.Collections.query.TileObjectQuery;
 import com.example.EthanApiPlugin.EthanApiPlugin;
-import com.example.InteractionApi.BankInteraction;
 import com.example.InteractionApi.BankInventoryInteraction;
+import com.example.InteractionApi.InventoryInteraction;
 import com.example.InteractionApi.TileObjectInteraction;
-import com.example.PacketUtils.WidgetInfoExtended;
 import com.example.Packets.*;
 import com.google.inject.Provides;
-import com.piggyplugins.PiggyUtils.API.BankUtil;
-import com.piggyplugins.PiggyUtils.API.InventoryUtil;
 import com.piggyplugins.PiggyUtils.BreakHandler.ReflectBreakHandler;
 import net.runelite.api.*;
-import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.config.ConfigManager;
@@ -33,28 +29,33 @@ import java.util.Optional;
 
 
 @PluginDescriptor(
-        name = "<html><font color=\"#FF9DF9\">[PP]</font> Bob The Template</html>",
-        description = "Bob goes Templateing",
+        name = "<html><font color=\"#FF9DF9\">[PP]</font> Bob The Lazy NMZ</html>",
+        description = "Bob goes NMZing",
         tags = {"ethan", "piggy", "skilling"}
 )
-public class BobTheTemplatePlugin extends Plugin {
+public class BobTheLazyNMZPlugin extends Plugin {
     @Inject
     private Client client;
     @Inject
-    BobTheTemplateConfig config;
+    BobTheLazyNMZConfig config;
     @Inject
     private KeyManager keyManager;
     @Inject
     private OverlayManager overlayManager;
     @Inject
-    private BobTheTemplateOverlay overlay;
+    private BobTheLazyNMZOverlay overlay;
     @Inject
     private ReflectBreakHandler breakHandler;
     State state;
     boolean started;
     private int timeout;
-    boolean takeBreak = false;
-    public String debug = "";
+
+    public int BoostedStrength, Strength;
+    public int BoostedHitpoints, Hitpoints;
+
+    private boolean eat = false;
+    private boolean drink = false;
+
 
     @Override
     protected void startUp() throws Exception {
@@ -71,85 +72,74 @@ public class BobTheTemplatePlugin extends Plugin {
     }
 
     @Provides
-    private BobTheTemplateConfig getConfig(ConfigManager configManager) {
-        return configManager.getConfig(BobTheTemplateConfig.class);
+    private BobTheLazyNMZConfig getConfig(ConfigManager configManager) {
+        return configManager.getConfig(BobTheLazyNMZConfig.class);
     }
 
     @Subscribe
     private void onGameTick(GameTick event) {
+
+        BoostedStrength = client.getBoostedSkillLevel(Skill.STRENGTH);
+        Strength = client.getRealSkillLevel(Skill.STRENGTH);
+
+        BoostedHitpoints = client.getBoostedSkillLevel(Skill.HITPOINTS);
+        Hitpoints = client.getRealSkillLevel(Skill.HITPOINTS);
+
         if (!EthanApiPlugin.loggedIn() || !started || breakHandler.isBreakActive(this)) {
             // We do an early return if the user isn't logged in
+            eat = false;
+            drink = false;
             return;
         }
 
-        state = getNextState();
-        handleState();
-    }
-
-    private void handleState() {
-        switch (state) {
-            case ANIMATING:
-                timeout = 5;
-                break;
-            case HANDLE_BREAK:
-                takeBreak = false;
-                breakHandler.startBreak(this);
-                timeout = 10;
-                break;
-            case TIMEOUT:
-                timeout--;
-                break;
-            case RESTOCK:
-                Restock();
-                break;
-        }
-    }
-
-    private State getNextState() {
-        if (EthanApiPlugin.isMoving() || client.getLocalPlayer().getAnimation() != -1) {
-            return State.ANIMATING;
-        }
-        if (breakHandler.shouldBreak(this)) {
-            return State.HANDLE_BREAK;
-        }
-        if (timeout > 0) {
-            return State.TIMEOUT;
+        if (timeout > 0)
+        {
+            timeout--;
+            return;
         }
 
-        return State.RESTOCK;
-    }
+        if (client.getBoostedSkillLevel(Skill.HITPOINTS) == 0)
+            started = false;
 
-
-
-    private void Restock()
-    {
-        if (Bank.isOpen()) {
-            List<Widget> bankInv = BankInventory.search().result();
-            for (Widget item : bankInv) {
+        if (drink && Inventory.search().nameContains("Overload").first().isPresent())
+        {
+            Inventory.search().nameContains("Overload").first().ifPresent(overload -> {
                 MousePackets.queueClickPacket();
-                BankInventoryInteraction.useItem(item, "Deposit-All");
-            }
-
-
-            setTimeout();
-        }
-        else {
-            Optional<TileObject> bankBooth = TileObjects.search().filter(tileObject -> {
-                ObjectComposition objectComposition = TileObjectQuery.getObjectComposition(tileObject);
-                return getName().toLowerCase().contains("bank") ||
-                        Arrays.stream(objectComposition.getActions()).anyMatch(action -> action != null && action.toLowerCase().contains("bank"));
-            }).nearestToPlayer();
-
-            if (bankBooth.isPresent()) {
-
-                MousePackets.queueClickPacket();
-                TileObjectInteraction.interact(bankBooth.get(), "Bank");
-            }
-
-            TileObjects.search().withName("Bank chest").nearestToPlayer().ifPresent(tileObject -> {
-                MousePackets.queueClickPacket();
-                TileObjectInteraction.interact(tileObject, "Use");
+                InventoryInteraction.useItem(overload, "Drink");
+                timeout = 20;
             });
+            drink = false;
+            return;
+
+        }
+
+        if (
+                client.getRealSkillLevel(Skill.STRENGTH) == client.getBoostedSkillLevel(Skill.STRENGTH) &&
+                client.getBoostedSkillLevel(Skill.HITPOINTS) > 50 &&
+                Inventory.search().nameContains("Overload").first().isPresent()
+        )
+        {
+            drink = true;
+            setTimeout();
+            return;
+        }
+
+        if (eat)
+        {
+            if (Inventory.search().nameContains("Dwarven rock cake").first().isPresent())
+            {
+                Inventory.search().nameContains("Dwarven rock cake").first().ifPresent(cake -> {
+                    MousePackets.queueClickPacket();
+                    InventoryInteraction.useItem(cake, "Guzzle");
+                });
+            }
+            eat = false;
+        }
+
+        if (client.getBoostedSkillLevel(Skill.HITPOINTS) > 1)
+        {
+            eat = true;
+            setTimeout();
         }
     }
 
