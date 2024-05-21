@@ -310,6 +310,9 @@ public class BobTheWizardPlugin extends Plugin {
 
     private void MakePlank()
     {
+        if (Inventory.search().withName("Coins").first().get().getItemQuantity() < 1050)
+            started = false;
+
         Widget PlankMake = client.getWidget(WidgetInfoExtended.SPELL_PLANK_MAKE.getPackedId());
         if (PlankMake != null) {
             Inventory.search().nameContains(config.plank()).first().ifPresentOrElse(item -> {
@@ -318,6 +321,8 @@ public class BobTheWizardPlugin extends Plugin {
             }, null);
             setTimeout();
         }
+        else
+            started = false;
     }
 
     private void alc()
