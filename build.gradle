@@ -14,7 +14,7 @@ allprojects {
         jcenter()
     }
 
-    def runeLiteVersion = '1.10.22'
+    def runeLiteVersion = '1.10.30'
 
     plugins.withType(JavaPlugin) {
         dependencies {
@@ -86,6 +86,8 @@ dependencies {
     implementation project(path: ':DropParty')
     implementation project(path: ':BetterProfiles')
     implementation project(path: ':PathingTesting')
+    implementation project(path: ':PiggyAutoCombat')
+    implementation project(path: ':CluePuzzleSolver')
     implementation 'io.reactivex.rxjava3:rxjava:3.1.6'
 
 }
@@ -102,7 +104,7 @@ sourceSets {
 }
 
 group = 'com.piggyplugins'
-version = '1.1.8'
+version = '1.2.2'
 sourceCompatibility = "11"
 
 task execPs(type:Exec){
