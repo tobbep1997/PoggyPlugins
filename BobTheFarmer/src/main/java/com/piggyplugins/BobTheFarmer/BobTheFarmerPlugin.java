@@ -1121,7 +1121,11 @@ public class BobTheFarmerPlugin extends Plugin {
                         treePatch.State = TreePatchState.DONE;
                         return;
                     }
-                    Widgets.search().withTextContains("Pay").hiddenState(false).first().ifPresentOrElse(payWidget -> {
+                    //Pay X item?
+                    String cleanProtItem = config.tree().ProtectionItem.toLowerCase();
+                    if (cleanProtItem.contains("("))
+                        cleanProtItem.substring(0, cleanProtItem.length() - 3);
+                    Widgets.search().withTextContains("Pay").withTextContains(cleanProtItem).hiddenState(false).first().ifPresentOrElse(payWidget -> {
                         MousePackets.queueClickPacket();
                         WidgetPackets.queueResumePause(payWidget.getId(), 1);
                     }, () -> {
