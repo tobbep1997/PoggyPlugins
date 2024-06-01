@@ -32,19 +32,19 @@ public class BobTheLazyNMZOverlay extends OverlayPanel {
                 .text(plugin.started ? "Running" : "Paused")
                 .color(plugin.started ? Color.GREEN : Color.RED)
                 .build());
+        panelComponent.getChildren().add(LineComponent.builder()
+                .left("Idle counter : ")
+                .leftColor(new Color(255, 157, 249))
+                .right("" + plugin.idleCounter)
+                .rightColor(Color.WHITE)
+                .build());
+        panelComponent.getChildren().add(LineComponent.builder()
+                .left("Absorption counter: ")
+                .leftColor(new Color(255, 157, 249))
+                .right("" + plugin.abosortionCounter)
+                .rightColor(Color.WHITE)
+                .build());
 
-        panelComponent.getChildren().add(LineComponent.builder()
-                .left("Strength: ")
-                .leftColor(new Color(255, 157, 249))
-                .right(plugin.BoostedStrength + " " + plugin.Strength)
-                .rightColor(Color.WHITE)
-                .build());
-        panelComponent.getChildren().add(LineComponent.builder()
-                .left("Hitpoints: ")
-                .leftColor(new Color(255, 157, 249))
-                .right(plugin.BoostedHitpoints + " " + plugin.Hitpoints)
-                .rightColor(Color.WHITE)
-                .build());
 
 
 

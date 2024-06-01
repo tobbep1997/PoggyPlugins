@@ -5,6 +5,7 @@ import com.example.EthanApiPlugin.Collections.query.TileObjectQuery;
 import com.example.EthanApiPlugin.EthanApiPlugin;
 import com.example.InteractionApi.BankInventoryInteraction;
 import com.example.InteractionApi.InventoryInteraction;
+import com.example.InteractionApi.NPCInteraction;
 import com.example.InteractionApi.TileObjectInteraction;
 import com.example.Packets.*;
 import com.google.inject.Provides;
@@ -56,6 +57,8 @@ public class BobTheLazyNMZPlugin extends Plugin {
     private boolean eat = false;
     private boolean drink = false;
 
+    public int idleCounter = 10;
+    public int abosortionCounter = 100;
 
     @Override
     protected void startUp() throws Exception {
@@ -106,7 +109,7 @@ public class BobTheLazyNMZPlugin extends Plugin {
             Inventory.search().nameContains("Overload").first().ifPresent(overload -> {
                 MousePackets.queueClickPacket();
                 InventoryInteraction.useItem(overload, "Drink");
-                timeout = 20;
+                timeout = 15;
             });
             drink = false;
             return;
@@ -140,6 +143,34 @@ public class BobTheLazyNMZPlugin extends Plugin {
         {
             eat = true;
             setTimeout();
+        }
+
+        if (client.getLocalPlayer().getAnimation() == -1)
+        {
+            idleCounter--;
+        }
+        else
+            idleCounter = 10;
+
+        if (idleCounter <= 0)
+        {
+            NPCs.search().withAction("Attack").nearestToPlayer().ifPresent(npc -> {
+                MousePackets.queueClickPacket();
+                NPCInteraction.interact(npc, "Attack");
+                idleCounter = 5;
+            });
+        }
+
+        abosortionCounter--;
+        if (abosortionCounter <= 0)
+        {
+            Optional<Widget> drink = Inventory.search().nameContains("Absorption").withAction("Drink").first();
+            if (drink.isPresent())
+            {
+                MousePackets.queueClickPacket();
+                InventoryInteraction.useItem(drink.get(), "Drink");
+                abosortionCounter = RandomUtils.nextInt(config.drinkDelay() - 25, config.drinkDelay() + 25);
+            }
         }
     }
 

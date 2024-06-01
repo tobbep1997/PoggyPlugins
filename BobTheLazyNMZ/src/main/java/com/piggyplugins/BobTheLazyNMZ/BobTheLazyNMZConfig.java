@@ -30,6 +30,16 @@ public interface BobTheLazyNMZConfig extends Config {
         return Keybind.NOT_SET;
     }
 
+    @ConfigItem(
+            name = "Drink delay",
+            keyName = "drinkDelay",
+            description = "",
+            position = 4,
+            section = tickDelaySection
+    )
+    default int drinkDelay() {
+        return 100;
+    }
 
     @ConfigItem(
             name = "Tick Delay Min",
