@@ -16,6 +16,7 @@ import net.runelite.api.events.GameTick;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.game.ItemManager;
 import net.runelite.client.input.KeyManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
@@ -50,6 +51,8 @@ public class BobTheFarmerPlugin extends Plugin {
     private OverlayManager overlayManager;
     @Inject
     private BobTheFarmerOverlay overlay;
+    @Inject
+    ItemManager itemManager;
 
     //------------------------------------- General variables -------------------------------------
     State state;
