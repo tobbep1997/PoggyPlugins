@@ -10,5 +10,6 @@ public enum State {
     RELOAD_CANNON,
     PRAYER_POTION,
     COMBAT_POTION,
-    BURY
+    BURY,
+    SLAYER_DONE
 }

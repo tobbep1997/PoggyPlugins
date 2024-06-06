@@ -7,7 +7,7 @@ public interface BobTheCombatBoyConfig extends Config {
     @ConfigSection(
             name = "Tick Delays",
             description = "Configuration for delays added to skilling activities",
-            position = 4
+            position = 13
 
     )
     String tickDelaySection = "Tick Delays";
@@ -15,7 +15,7 @@ public interface BobTheCombatBoyConfig extends Config {
     @ConfigSection(
             name = "Items selection",
             description = "Configuration for items",
-            position = 2
+            position = 10
 
     )
     String itemSelection = "Item selection";
@@ -23,10 +23,18 @@ public interface BobTheCombatBoyConfig extends Config {
     @ConfigSection(
             name = "Cannon",
             description = "Configuration for cannon",
-            position = 3
+            position = 11
 
     )
     String cannonSelection = "Cannon selection";
+    @ConfigSection(
+            name = "Slayer",
+            description = "Configuration for slayer",
+            position = 12
+
+    )
+    String slayerSelection = "Slayer selection";
+
 
     @ConfigItem(
             keyName = "toggle",
@@ -55,6 +63,15 @@ public interface BobTheCombatBoyConfig extends Config {
     )
     default int eat() {
         return 50;
+    }
+    @ConfigItem(
+            keyName = "prayer",
+            name = "Prayer",
+            description = "",
+            position = 2
+    )
+    default int prayer() {
+        return 20;
     }
     @ConfigItem(
             keyName = "bury",
@@ -86,6 +103,17 @@ public interface BobTheCombatBoyConfig extends Config {
     )
     default int tickDelayMax() {
         return 3;
+    }
+
+    @ConfigItem(
+            name = "Attack timeout",
+            keyName = "attackTimeout",
+            description = "Time before attacking",
+            position = 6,
+            section = tickDelaySection
+    )
+    default int attackTimeout() {
+        return 5;
     }
 
     @ConfigItem(
@@ -143,6 +171,28 @@ public interface BobTheCombatBoyConfig extends Config {
     }
 
     @ConfigItem(
+            name = "Drop items",
+            keyName = "dropItems",
+            description = "",
+            position = 4,
+            section = itemSelection
+    )
+    default boolean dropItems() {
+        return true;
+    }
+
+    @ConfigItem(
+            name = "Drop value",
+            keyName = "dropValue",
+            description = "If inventory is full drop items less of value",
+            position = 5,
+            section = itemSelection
+    )
+    default int dropValue() {
+        return 5;
+    }
+
+    @ConfigItem(
             name = "Use cannon",
             keyName = "useCannon",
             description = "",
@@ -163,4 +213,26 @@ public interface BobTheCombatBoyConfig extends Config {
     default int cannonTime() {
         return 30;
     }
+
+    @ConfigItem(
+            name = "Stop when task is done",
+            keyName = "slayerStop",
+            description = "",
+            position = 0,
+            section = slayerSelection
+    )
+    default boolean slayerStop() {
+        return true;
+    }
+    @ConfigItem(
+            name = "Break tab when task is done",
+            keyName = "slayerBreak",
+            description = "",
+            position = 1,
+            section = slayerSelection
+    )
+    default boolean slayerBreak() {
+        return true;
+    }
+
 }

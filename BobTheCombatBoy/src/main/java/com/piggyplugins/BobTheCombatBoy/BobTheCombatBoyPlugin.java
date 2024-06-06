@@ -12,6 +12,8 @@ import com.google.inject.Provides;
 import com.piggyplugins.PiggyUtils.BreakHandler.ReflectBreakHandler;
 import net.runelite.api.*;
 import net.runelite.api.events.GameTick;
+import net.runelite.api.events.ItemSpawned;
+import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
@@ -62,9 +64,9 @@ public class BobTheCombatBoyPlugin extends Plugin {
     boolean takeBreak = false;
     public String debug = "";
     private int cannonTime = 0;
-
-
-    public Queue<ItemStack> lootQueue = new ArrayDeque<>();
+    private boolean slayerTaskDone = false;
+    private int slayerCountDown = 5;
+    public Queue<TileItem> lootQueue = new ArrayDeque<>();
 
     @Override
     protected void startUp() throws Exception {
@@ -89,6 +91,8 @@ public class BobTheCombatBoyPlugin extends Plugin {
     private void onGameTick(GameTick event) {
         if (!EthanApiPlugin.loggedIn() || !started || breakHandler.isBreakActive(this)) {
             // We do an early return if the user isn't logged in
+            slayerTaskDone = false;
+            slayerCountDown = 5;
             return;
         }
         state = getNextState();
@@ -96,31 +100,46 @@ public class BobTheCombatBoyPlugin extends Plugin {
     }
 
     @Subscribe
-    public void onNpcLootReceived(NpcLootReceived event) {
+    public void onItemSpawned(ItemSpawned itemSpawned) {
         if (!started || !config.loot()) return;
 
-        Collection<ItemStack> items = event.getItems();
-        items.stream().filter(item -> {
-            ItemComposition comp = itemManager.getItemComposition(item.getId());
-            if (config.lootCoins() && Objects.equals(comp.getName(), "Coins"))
-                return true;
-            if (config.bury() && comp.getName().toLowerCase().contains("bone"))
-                return true;
+        TileItem item = itemSpawned.getItem();
+        boolean add = false;
 
-            return new LootItem(config.useHAValue() ? comp.getHaPrice() : comp.getPrice(),
-                    config.minVal(),
-                    config.minStackVal(),
-                    comp.isStackable()
-            ).Loot();
-        }).forEach(it -> {
-            lootQueue.add(it);
-        });
+        ItemComposition comp = itemManager.getItemComposition(item.getId());
+
+        if (config.lootCoins() && Objects.equals(comp.getName(), "Coins"))
+            add = true;
+        if (config.bury() && (comp.getName().toLowerCase().contains("bone") || comp.getName().toLowerCase().contains("ashes")))
+            add = true;
+
+        if (new LootItem(config.useHAValue() ? comp.getHaPrice() : itemManager.getItemPrice(comp.getId()),
+                config.minVal(),
+                config.minStackVal(),
+                comp.isStackable()
+        ).Loot())
+            add = true;
+
+        if (add)
+            lootQueue.add(item);
+    }
+
+    @Subscribe
+    public void onVarbitChanged(VarbitChanged event) {
+        if (!started || !config.slayerStop()) return;
+        int bid = event.getVarbitId();
+        int pid = event.getVarpId();
+        if (pid == VarPlayer.SLAYER_TASK_SIZE) {
+            if (event.getValue() <= 0) {
+                slayerTaskDone = true;
+            }
+        }
     }
 
     private void handleState() {
         switch (state) {
             case ANIMATING:
-                combatTimeout = 5;
+                combatTimeout = config.attackTimeout();
                 break;
             case HANDLE_BREAK:
                 takeBreak = false;
@@ -152,6 +171,11 @@ public class BobTheCombatBoyPlugin extends Plugin {
                 if (combatTimeout <= 0)
                     attack();
                 break;
+            case SLAYER_DONE:
+                slayerCountDown--;
+                if (slayerCountDown <= 0)
+                    slayerDone();
+                break;
         }
     }
 
@@ -169,10 +193,14 @@ public class BobTheCombatBoyPlugin extends Plugin {
             return State.LOOT;
         if (config.useCannon() && cannonTime <= 0)
             return State.RELOAD_CANNON;
-        if (Inventory.search().withAction("Bury").first().isPresent())
+        if (Inventory.search().withAction("Bury").first().isPresent() ||
+            Inventory.search().withAction("Scatter").first().isPresent())
             return State.BURY;
-        if (client.getBoostedSkillLevel(Skill.PRAYER) < 20)
+        if (client.getBoostedSkillLevel(Skill.PRAYER) < config.prayer() &&
+            Inventory.search().nameContains("Prayer potion").first().isPresent())
             return State.PRAYER_POTION;
+        if (slayerTaskDone && lootQueue.isEmpty())
+            return State.SLAYER_DONE;
         if (EthanApiPlugin.isMoving() || client.getLocalPlayer().getAnimation() != -1)
             return State.ANIMATING;
 
@@ -192,6 +220,10 @@ public class BobTheCombatBoyPlugin extends Plugin {
         Inventory.search().withAction("Bury").first().ifPresent(bones -> {
             MousePackets.queueClickPacket();
             InventoryInteraction.useItem(bones, "Bury");
+        });
+        Inventory.search().withAction("Scatter").first().ifPresent(bones -> {
+            MousePackets.queueClickPacket();
+            InventoryInteraction.useItem(bones, "Scatter");
         });
         setTimeout();
     }
@@ -230,13 +262,32 @@ public class BobTheCombatBoyPlugin extends Plugin {
     }
     private void loot()
     {
+        if (Inventory.full() && config.dropItems())
+        {
+            List<Widget> inventory = Inventory.search().result();
+
+            for (Widget widget : inventory) {
+                ItemComposition comp = itemManager.getItemComposition(widget.getId());
+                if (comp.isStackable())
+                    continue;
+
+                int value = config.useHAValue() ? comp.getHaPrice() : itemManager.getItemPrice(comp.getId());
+                if (value < config.dropValue()) {
+                    MousePackets.queueClickPacket();
+                    InventoryInteraction.useItem(widget, "Drop");
+                    return;
+                }
+
+            }
+        }
+
         boolean loot = false;
-        ItemStack itemStack = lootQueue.poll();
-        ItemComposition composition = itemManager.getItemComposition(itemStack.getId());
+        TileItem tileItem = lootQueue.poll();
+        ItemComposition composition = itemManager.getItemComposition(tileItem.getId());
         if (Inventory.full())
         {
             if (composition.isStackable() &&
-                    Inventory.search().withId(itemStack.getId()).first().isPresent())
+                    Inventory.search().withId(tileItem.getId()).first().isPresent())
                 loot = true;
         }
         else
@@ -245,11 +296,24 @@ public class BobTheCombatBoyPlugin extends Plugin {
         if (!loot)
             return;
 
-        TileItems.search().withId(itemStack.getId()).withinDistance(10).first().ifPresent(item -> {
+        TileItems.search().withId(tileItem.getId()).withinDistance(10).first().ifPresent(item -> {
             MousePackets.queueClickPacket();
             item.interact(false);
         });
-        setTimeout();
+        timeout = 2;
+    }
+
+    private void slayerDone()
+    {
+        if (config.slayerBreak())
+        {
+            Inventory.search().withAction("Break").first().ifPresent(tab -> {
+                MousePackets.queueClickPacket();
+                InventoryInteraction.useItem(tab, "Break");
+            });
+        }
+        if (config.slayerStop())
+            started = false;
     }
 
     private void setTimeout() {
