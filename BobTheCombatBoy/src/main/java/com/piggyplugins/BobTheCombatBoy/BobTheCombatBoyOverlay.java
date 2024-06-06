@@ -25,7 +25,7 @@ public class BobTheCombatBoyOverlay extends OverlayPanel {
     public Dimension render(Graphics2D graphics) {
         panelComponent.setPreferredSize(new Dimension(200, 320));
         panelComponent.getChildren().add(TitleComponent.builder()
-                .text("Bob The Template")
+                .text("Bob The Combat Boy")
                 .color(new Color(255, 157, 249))
                 .build());
         panelComponent.getChildren().add(TitleComponent.builder()
@@ -39,9 +39,9 @@ public class BobTheCombatBoyOverlay extends OverlayPanel {
                 .rightColor(Color.WHITE)
                 .build());
         panelComponent.getChildren().add(LineComponent.builder()
-                .left("DEBUG: ")
+                .left("LootQueueSize: ")
                 .leftColor(new Color(255, 157, 249))
-                .right(plugin.debug)
+                .right("" + plugin.lootQueue.size())
                 .rightColor(Color.WHITE)
                 .build());
 
