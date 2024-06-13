@@ -14,5 +14,6 @@ public enum State {
     BURY,
     SLAYER_DONE,
     MOVE_TO_SAFE_SPOT,
+    RESET_AGGRO,
     GTFO
 }

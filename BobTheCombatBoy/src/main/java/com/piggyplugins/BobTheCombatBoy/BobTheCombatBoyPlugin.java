@@ -33,6 +33,7 @@ import com.google.inject.Inject;
 import org.apache.commons.lang3.RandomUtils;
 
 import javax.swing.*;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -73,7 +74,9 @@ public class BobTheCombatBoyPlugin extends Plugin {
     private int slayerCountDown = 5;
     public Queue<TileItem> lootQueue = new ArrayDeque<>();
     WorldPoint safeSpot = null;
+    WorldPoint resetSpot = new WorldPoint(2407, 9163, 1);
     NPC currentTarget = null;
+    LocalDateTime lastAggroReset;
 
 
     @Override
@@ -81,6 +84,7 @@ public class BobTheCombatBoyPlugin extends Plugin {
         keyManager.registerKeyListener(toggle);
         breakHandler.registerPlugin(this);
         this.overlayManager.add(overlay);
+
     }
 
     @Override
@@ -106,6 +110,7 @@ public class BobTheCombatBoyPlugin extends Plugin {
             safeSpot = null;
             currentTarget = null;
             lootQueue.clear();
+            lastAggroReset = LocalDateTime.now();
             return;
         }
         if (safeSpot == null)
@@ -203,6 +208,9 @@ public class BobTheCombatBoyPlugin extends Plugin {
             case MOVE_TO_SAFE_SPOT:
                 moveToSafeSpot();
                 break;
+            case RESET_AGGRO:
+                resetAggro();
+                break;
         }
     }
 
@@ -232,14 +240,18 @@ public class BobTheCombatBoyPlugin extends Plugin {
         if (EthanApiPlugin.isMoving())
             return State.MOVING;
 
+        if (timeout > 0)
+            return State.TIMEOUT;
+
+        if (config.maniacalMonkey() &&
+                lastAggroReset.plusMinutes(config.maniacalMonkeyReset()).isBefore(LocalDateTime.now()))
+            return State.RESET_AGGRO;
+
         if (!lootQueue.isEmpty())
             return State.LOOT;
 
         if (config.safeSpot() && client.getLocalPlayer().getWorldLocation().distanceTo(safeSpot) > 0)
             return State.MOVE_TO_SAFE_SPOT;
-
-        if (timeout > 0)
-            return State.TIMEOUT;
 
         if (slayerTaskDone && lootQueue.isEmpty())
             return State.SLAYER_DONE;
@@ -259,6 +271,21 @@ public class BobTheCombatBoyPlugin extends Plugin {
             MousePackets.queueClickPacket();
             InventoryInteraction.useItem(food, "Eat");
         });
+    }
+
+    private void resetAggro()
+    {
+        if (client.getLocalPlayer().getWorldLocation().distanceTo(resetSpot) > 0)
+        {
+            MousePackets.queueClickPacket();
+            MovementPackets.queueMovement(resetSpot);
+            timeout = 1;
+        }
+        else
+        {
+            lastAggroReset = LocalDateTime.now();
+        }
+
     }
 
     private void moveToSafeSpot() {
@@ -339,6 +366,7 @@ public class BobTheCombatBoyPlugin extends Plugin {
             if (item.isPresent()) {
                 MousePackets.queueClickPacket();
                 InventoryInteraction.useItem(item.get(), "Drop");
+                return;
             }
         }
 

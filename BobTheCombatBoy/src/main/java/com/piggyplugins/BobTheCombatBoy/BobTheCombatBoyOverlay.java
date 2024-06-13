@@ -7,6 +7,7 @@ import net.runelite.client.ui.overlay.components.LineComponent;
 import net.runelite.client.ui.overlay.components.TitleComponent;
 
 import java.awt.*;
+import java.time.LocalDateTime;
 
 public class BobTheCombatBoyOverlay extends OverlayPanel {
 

@@ -87,6 +87,25 @@ public interface BobTheCombatBoyConfig extends Config {
     }
 
     @ConfigItem(
+            keyName =  "maniacalMonkey",
+            name = "MM2 Maniacal monkey mode",
+            description = "",
+            position = 4
+    )
+    default boolean maniacalMonkey() {
+        return false;
+    }
+    @ConfigItem(
+            keyName =  "maniacalMonkeyReset",
+            name = "MM2 Maniacal monkey reset time",
+            description = "",
+            position = 4
+    )
+    default int maniacalMonkeyReset() {
+        return 15;
+    }
+
+    @ConfigItem(
             name = "Tick Delay Min",
             keyName = "tickDelayMin",
             description = "Lower bound of tick delay, can set both to 0 to remove delay",
