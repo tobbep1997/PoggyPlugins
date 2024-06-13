@@ -2,6 +2,7 @@ package com.piggyplugins.BobTheCombatBoy;
 
 public enum State {
     ANIMATING,
+    MOVING,
     TIMEOUT,
     HANDLE_BREAK,
     EAT,
@@ -11,5 +12,7 @@ public enum State {
     PRAYER_POTION,
     COMBAT_POTION,
     BURY,
-    SLAYER_DONE
+    SLAYER_DONE,
+    MOVE_TO_SAFE_SPOT,
+    GTFO
 }

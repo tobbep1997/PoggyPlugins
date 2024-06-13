@@ -28,12 +28,12 @@ public interface BobTheCombatBoyConfig extends Config {
     )
     String cannonSelection = "Cannon selection";
     @ConfigSection(
-            name = "Slayer",
-            description = "Configuration for slayer",
+            name = "Escape options",
+            description = "Configuration for GTFO",
             position = 12
 
     )
-    String slayerSelection = "Slayer selection";
+    String escapeSelection = "Escape options";
 
 
     @ConfigItem(
@@ -55,6 +55,7 @@ public interface BobTheCombatBoyConfig extends Config {
     default String target() {
         return "Rat";
     }
+
     @ConfigItem(
             keyName = "eat",
             name = "Eat HP",
@@ -64,6 +65,7 @@ public interface BobTheCombatBoyConfig extends Config {
     default int eat() {
         return 50;
     }
+
     @ConfigItem(
             keyName = "prayer",
             name = "Prayer",
@@ -73,14 +75,15 @@ public interface BobTheCombatBoyConfig extends Config {
     default int prayer() {
         return 20;
     }
+
     @ConfigItem(
-            keyName = "bury",
-            name = "Bury bones",
+            keyName = "safeSpot",
+            name = "Use safe spot",
             description = "",
-            position = 2
+            position = 3
     )
-    default boolean bury() {
-        return true;
+    default boolean safeSpot() {
+        return false;
     }
 
     @ConfigItem(
@@ -126,6 +129,7 @@ public interface BobTheCombatBoyConfig extends Config {
     default boolean loot() {
         return true;
     }
+
     @ConfigItem(
             name = "Loot coins",
             keyName = "lootCoins",
@@ -134,6 +138,17 @@ public interface BobTheCombatBoyConfig extends Config {
             section = itemSelection
     )
     default boolean lootCoins() {
+        return true;
+    }
+
+    @ConfigItem(
+            keyName = "bury",
+            name = "Bury bones",
+            description = "",
+            position = 0,
+            section = itemSelection
+    )
+    default boolean bury() {
         return true;
     }
 
@@ -214,25 +229,49 @@ public interface BobTheCombatBoyConfig extends Config {
         return 30;
     }
 
+
     @ConfigItem(
             name = "Stop when task is done",
             keyName = "slayerStop",
             description = "",
             position = 0,
-            section = slayerSelection
+            section = escapeSelection
     )
     default boolean slayerStop() {
         return true;
     }
+
     @ConfigItem(
             name = "Break tab when task is done",
             keyName = "slayerBreak",
             description = "",
             position = 1,
-            section = slayerSelection
+            section = escapeSelection
     )
     default boolean slayerBreak() {
         return true;
+    }
+
+    @ConfigItem(
+            name = "Low Prayer break tab",
+            keyName = "lowPrayer",
+            description = "",
+            position = 2,
+            section = escapeSelection
+    )
+    default int lowPrayer() {
+        return 15;
+    }
+
+    @ConfigItem(
+            name = "Low Health break tab",
+            keyName = "lowHealth",
+            description = "",
+            position = 2,
+            section = escapeSelection
+    )
+    default int lowHealth() {
+        return 30;
     }
 
 }

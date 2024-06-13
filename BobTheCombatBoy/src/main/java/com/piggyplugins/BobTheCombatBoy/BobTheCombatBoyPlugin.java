@@ -9,8 +9,10 @@ import com.example.InteractionApi.NPCInteraction;
 import com.example.InteractionApi.TileObjectInteraction;
 import com.example.Packets.*;
 import com.google.inject.Provides;
+import com.piggyplugins.PiggyUtils.API.PrayerUtil;
 import com.piggyplugins.PiggyUtils.BreakHandler.ReflectBreakHandler;
 import net.runelite.api.*;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.ItemSpawned;
 import net.runelite.api.events.VarbitChanged;
@@ -32,6 +34,10 @@ import org.apache.commons.lang3.RandomUtils;
 
 import javax.swing.*;
 import java.util.*;
+import java.util.stream.Stream;
+
+import static net.runelite.api.TileItem.OWNERSHIP_GROUP;
+import static net.runelite.api.TileItem.OWNERSHIP_SELF;
 
 
 @PluginDescriptor(
@@ -56,7 +62,6 @@ public class BobTheCombatBoyPlugin extends Plugin {
     private ItemManager itemManager;
 
 
-
     State state;
     boolean started;
     private int timeout;
@@ -67,6 +72,9 @@ public class BobTheCombatBoyPlugin extends Plugin {
     private boolean slayerTaskDone = false;
     private int slayerCountDown = 5;
     public Queue<TileItem> lootQueue = new ArrayDeque<>();
+    WorldPoint safeSpot = null;
+    NPC currentTarget = null;
+
 
     @Override
     protected void startUp() throws Exception {
@@ -89,12 +97,20 @@ public class BobTheCombatBoyPlugin extends Plugin {
 
     @Subscribe
     private void onGameTick(GameTick event) {
+        debug = "" + client.getLocalPlayer().getAnimation();
+
         if (!EthanApiPlugin.loggedIn() || !started || breakHandler.isBreakActive(this)) {
             // We do an early return if the user isn't logged in
             slayerTaskDone = false;
             slayerCountDown = 5;
+            safeSpot = null;
+            currentTarget = null;
+            lootQueue.clear();
             return;
         }
+        if (safeSpot == null)
+            safeSpot = client.getLocalPlayer().getWorldLocation();
+
         state = getNextState();
         handleState();
     }
@@ -103,10 +119,15 @@ public class BobTheCombatBoyPlugin extends Plugin {
     public void onItemSpawned(ItemSpawned itemSpawned) {
         if (!started || !config.loot()) return;
 
-        TileItem item = itemSpawned.getItem();
         boolean add = false;
-
+        TileItem item = itemSpawned.getItem();
         ItemComposition comp = itemManager.getItemComposition(item.getId());
+
+        if (item.getOwnership() != OWNERSHIP_SELF &&
+                item.getOwnership() != OWNERSHIP_GROUP)
+            return;
+        if (itemSpawned.getTile().getWorldLocation().distanceTo(client.getLocalPlayer().getWorldLocation()) >= 10)
+            return;
 
         if (config.lootCoins() && Objects.equals(comp.getName(), "Coins"))
             add = true;
@@ -176,6 +197,12 @@ public class BobTheCombatBoyPlugin extends Plugin {
                 if (slayerCountDown <= 0)
                     slayerDone();
                 break;
+            case GTFO:
+                teleportOut();
+                break;
+            case MOVE_TO_SAFE_SPOT:
+                moveToSafeSpot();
+                break;
         }
     }
 
@@ -183,40 +210,64 @@ public class BobTheCombatBoyPlugin extends Plugin {
         //Count cannon ticks
         if (config.useCannon() && !TileObjects.search().nameContains("multicannon").withAction("Fire").result().isEmpty())
             cannonTime--;
+
         if (breakHandler.shouldBreak(this))
             return State.HANDLE_BREAK;
-        if (client.getBoostedSkillLevel(Skill.HITPOINTS) < config.eat())
+
+        if (client.getBoostedSkillLevel(Skill.HITPOINTS) < config.eat() &&
+                Inventory.search().withAction("Eat").first().isPresent())
             return State.EAT;
-        if (timeout > 0)
-            return State.TIMEOUT;
-        if (!lootQueue.isEmpty())
-            return State.LOOT;
+
+        if (client.getBoostedSkillLevel(Skill.PRAYER) < config.prayer() &&
+                Inventory.search().nameContains("Prayer potion").first().isPresent())
+            return State.PRAYER_POTION;
+
+        if (client.getBoostedSkillLevel(Skill.HITPOINTS) < config.lowHealth() ||
+                client.getBoostedSkillLevel(Skill.PRAYER) < config.lowPrayer())
+            return State.GTFO;
+
         if (config.useCannon() && cannonTime <= 0)
             return State.RELOAD_CANNON;
-        if (Inventory.search().withAction("Bury").first().isPresent() ||
-            Inventory.search().withAction("Scatter").first().isPresent())
-            return State.BURY;
-        if (client.getBoostedSkillLevel(Skill.PRAYER) < config.prayer() &&
-            Inventory.search().nameContains("Prayer potion").first().isPresent())
-            return State.PRAYER_POTION;
+
+        if (EthanApiPlugin.isMoving())
+            return State.MOVING;
+
+        if (!lootQueue.isEmpty())
+            return State.LOOT;
+
+        if (config.safeSpot() && client.getLocalPlayer().getWorldLocation().distanceTo(safeSpot) > 0)
+            return State.MOVE_TO_SAFE_SPOT;
+
+        if (timeout > 0)
+            return State.TIMEOUT;
+
         if (slayerTaskDone && lootQueue.isEmpty())
             return State.SLAYER_DONE;
-        if (EthanApiPlugin.isMoving() || client.getLocalPlayer().getAnimation() != -1)
+
+        if (client.getLocalPlayer().getAnimation() != -1)
             return State.ANIMATING;
+
+        if (Inventory.search().withAction("Bury").first().isPresent() ||
+                Inventory.search().withAction("Scatter").first().isPresent())
+            return State.BURY;
 
         return State.ATTACK;
     }
 
-    private void eat()
-    {
+    private void eat() {
         Inventory.search().withAction("Eat").first().ifPresent(food -> {
             MousePackets.queueClickPacket();
             InventoryInteraction.useItem(food, "Eat");
         });
     }
 
-    private void bury()
-    {
+    private void moveToSafeSpot() {
+        //Move the player to the trap location
+        MousePackets.queueClickPacket();
+        MovementPackets.queueMovement(safeSpot);
+    }
+
+    private void bury() {
         Inventory.search().withAction("Bury").first().ifPresent(bones -> {
             MousePackets.queueClickPacket();
             InventoryInteraction.useItem(bones, "Bury");
@@ -228,8 +279,7 @@ public class BobTheCombatBoyPlugin extends Plugin {
         setTimeout();
     }
 
-    private void prayer()
-    {
+    private void prayer() {
         Inventory.search().nameContains("Prayer potion").first().ifPresent(potion -> {
             MousePackets.queueClickPacket();
             InventoryInteraction.useItem(potion, "Drink");
@@ -237,10 +287,8 @@ public class BobTheCombatBoyPlugin extends Plugin {
         setTimeout();
     }
 
-    private void cannon()
-    {
-        if (Inventory.search().nameContains("Cannonball").first().isPresent())
-        {
+    private void cannon() {
+        if (Inventory.search().nameContains("Cannonball").first().isPresent()) {
             TileObjects.search().nameContains("multicannon").withAction("Fire").nearestToPlayer().ifPresent(can -> {
                 MousePackets.queueClickPacket();
                 TileObjectInteraction.interact(can, "Fire");
@@ -250,63 +298,72 @@ public class BobTheCombatBoyPlugin extends Plugin {
         setTimeout();
     }
 
-    private void attack()
-    {
-        NPCs.search().nameContains(config.target()).nearestToPlayer().ifPresent(enemy -> {
-            if (enemy.getWorldLocation().distanceTo(client.getLocalPlayer().getWorldLocation()) > 10)
-                return;
-            MousePackets.queueClickPacket();
-            NPCInteraction.interact(enemy, "Attack");
-        });
-        setTimeout();
-    }
-    private void loot()
-    {
-        if (Inventory.full() && config.dropItems())
-        {
-            List<Widget> inventory = Inventory.search().result();
-
-            for (Widget widget : inventory) {
-                ItemComposition comp = itemManager.getItemComposition(widget.getId());
-                if (comp.isStackable())
-                    continue;
-
-                int value = config.useHAValue() ? comp.getHaPrice() : itemManager.getItemPrice(comp.getId());
-                if (value < config.dropValue()) {
-                    MousePackets.queueClickPacket();
-                    InventoryInteraction.useItem(widget, "Drop");
+    private void attack() {
+        if (currentTarget == null) {
+            NPCs.search().nameContains(config.target()).nearestToPlayer().ifPresent(enemy -> {
+                if (enemy.getWorldLocation().distanceTo(client.getLocalPlayer().getWorldLocation()) > 10) {
                     return;
                 }
+                currentTarget = enemy;
+            });
+        } else {
+            try {
+                if (!currentTarget.getComposition().isInteractible()) {
+                    currentTarget = null;
+                    return;
+                }
+            } catch (Exception e) {
+                currentTarget = null;
+                return;
+            }
 
+
+            if (config.safeSpot()) {
+                if (currentTarget.getWorldLocation().distanceTo(safeSpot) > 10) {
+                    currentTarget = null;
+                    return;
+                }
+            }
+
+            MousePackets.queueClickPacket();
+            NPCInteraction.interact(currentTarget, "Attack");
+        }
+
+        setTimeout();
+    }
+
+    private void loot() {
+        if (Inventory.full() && config.dropItems()) {
+            Optional<Widget> item = Inventory.search().withName("Vial").first();
+
+            if (item.isPresent()) {
+                MousePackets.queueClickPacket();
+                InventoryInteraction.useItem(item.get(), "Drop");
             }
         }
 
         boolean loot = false;
         TileItem tileItem = lootQueue.poll();
         ItemComposition composition = itemManager.getItemComposition(tileItem.getId());
-        if (Inventory.full())
-        {
+        if (Inventory.full()) {
             if (composition.isStackable() &&
                     Inventory.search().withId(tileItem.getId()).first().isPresent())
                 loot = true;
-        }
-        else
+        } else
             loot = true;
 
         if (!loot)
             return;
 
-        TileItems.search().withId(tileItem.getId()).withinDistance(10).first().ifPresent(item -> {
+        TileItems.search().withId(tileItem.getId()).withinDistance(10).nearestToPlayer().ifPresent(item -> {
             MousePackets.queueClickPacket();
             item.interact(false);
         });
-        timeout = 2;
+        timeout = 1;
     }
 
-    private void slayerDone()
-    {
-        if (config.slayerBreak())
-        {
+    private void slayerDone() {
+        if (config.slayerBreak()) {
             Inventory.search().withAction("Break").first().ifPresent(tab -> {
                 MousePackets.queueClickPacket();
                 InventoryInteraction.useItem(tab, "Break");
@@ -316,11 +373,20 @@ public class BobTheCombatBoyPlugin extends Plugin {
             started = false;
     }
 
+    private void teleportOut() {
+        Inventory.search().withAction("Break").first().ifPresent(tab -> {
+            MousePackets.queueClickPacket();
+            InventoryInteraction.useItem(tab, "Break");
+        });
+        started = false;
+
+    }
+
     private void setTimeout() {
         timeout = RandomUtils.nextInt(config.tickdelayMin(), config.tickDelayMax());
     }
-    private int randNext(int base, int down, int up)
-    {
+
+    private int randNext(int base, int down, int up) {
         return RandomUtils.nextInt(base - down, base + up);
     }
 

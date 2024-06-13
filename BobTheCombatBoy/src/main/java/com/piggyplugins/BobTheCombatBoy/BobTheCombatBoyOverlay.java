@@ -35,7 +35,7 @@ public class BobTheCombatBoyOverlay extends OverlayPanel {
         panelComponent.getChildren().add(LineComponent.builder()
                 .left("State: ")
                 .leftColor(new Color(255, 157, 249))
-                .right(plugin.state==null || !plugin.started ? "STOPPED" : plugin.state.name())
+                .right(plugin.state == null || !plugin.started ? "STOPPED" : plugin.state.name())
                 .rightColor(Color.WHITE)
                 .build());
         panelComponent.getChildren().add(LineComponent.builder()
@@ -44,9 +44,6 @@ public class BobTheCombatBoyOverlay extends OverlayPanel {
                 .right("" + plugin.lootQueue.size())
                 .rightColor(Color.WHITE)
                 .build());
-
-
-
 
         return super.render(graphics);
     }

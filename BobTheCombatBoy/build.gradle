@@ -34,4 +34,4 @@ task PiggyJar(type: Jar) {
     with jar
 }
 
-tasks.register("prepareKotlinBuildScriptModel"){}
+tasks.register("prepareKotlinBuildScriptModel") {}
