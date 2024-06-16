@@ -45,6 +45,12 @@ public class BobTheCombatBoyOverlay extends OverlayPanel {
                 .right("" + plugin.lootQueue.size())
                 .rightColor(Color.WHITE)
                 .build());
+        panelComponent.getChildren().add(LineComponent.builder()
+                .left("DEBUG: ")
+                .leftColor(new Color(255, 157, 249))
+                .right(plugin.debug)
+                .rightColor(Color.WHITE)
+                .build());
 
         return super.render(graphics);
     }

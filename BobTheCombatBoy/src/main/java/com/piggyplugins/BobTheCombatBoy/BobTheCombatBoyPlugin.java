@@ -211,6 +211,9 @@ public class BobTheCombatBoyPlugin extends Plugin {
             case RESET_AGGRO:
                 resetAggro();
                 break;
+            case DECANT:
+                decantPrayerPotions();
+                break;
         }
     }
 
@@ -253,6 +256,9 @@ public class BobTheCombatBoyPlugin extends Plugin {
         if (config.safeSpot() && client.getLocalPlayer().getWorldLocation().distanceTo(safeSpot) > 0)
             return State.MOVE_TO_SAFE_SPOT;
 
+        if (decantablePrayerPotions())
+            return State.DECANT;
+
         if (slayerTaskDone && lootQueue.isEmpty())
             return State.SLAYER_DONE;
 
@@ -264,6 +270,68 @@ public class BobTheCombatBoyPlugin extends Plugin {
             return State.BURY;
 
         return State.ATTACK;
+    }
+
+    private boolean decantablePrayerPotions()
+    {
+        List<Widget> prayerPotions = Inventory.search().nameContains("Prayer potion(2)").result();
+
+        if (prayerPotions.size() >= 2)
+            return true;
+
+        prayerPotions = Inventory.search().nameContains("Prayer potion(1)").result();
+
+        if (prayerPotions.size() >= 2)
+            return true;
+
+
+
+        return !Inventory.search().nameContains("Prayer potion(1)").empty() && !Inventory.search().nameContains("Prayer potion(3)").empty();
+    }
+
+    private void decantPrayerPotions()
+    {
+        debug = "called";
+        List<Widget> prayerPotions = Inventory.search().nameContains("Prayer potion(1)").result();
+        if (prayerPotions.size() >= 2)
+        {
+            debug = "more then 2";
+
+            Widget p1 = prayerPotions.get(0);
+            Widget p2 = prayerPotions.get(1);
+
+            MousePackets.queueClickPacket();
+            MousePackets.queueClickPacket();
+            WidgetPackets.queueWidgetOnWidget(p1, p2);
+            setTimeout();
+            return;
+        }
+
+        prayerPotions = Inventory.search().nameContains("Prayer potion(2)").result();
+        if (prayerPotions.size() >= 2)
+        {
+            debug = "more then 2";
+
+            Widget p1 = prayerPotions.get(0);
+            Widget p2 = prayerPotions.get(1);
+
+            MousePackets.queueClickPacket();
+            MousePackets.queueClickPacket();
+            WidgetPackets.queueWidgetOnWidget(p1, p2);
+            setTimeout();
+            return;
+        }
+
+        Optional<Widget> p1 = Inventory.search().nameContains("Prayer potion(3)").first();
+        Optional<Widget> p2 = Inventory.search().nameContains("Prayer potion(1)").first();
+
+        if (p1.isPresent() && p2.isPresent())
+        {
+            MousePackets.queueClickPacket();
+            MousePackets.queueClickPacket();
+            WidgetPackets.queueWidgetOnWidget(p1.get(), p2.get());
+            setTimeout();
+        }
     }
 
     private void eat() {

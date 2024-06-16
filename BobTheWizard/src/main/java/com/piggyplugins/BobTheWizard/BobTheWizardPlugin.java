@@ -203,11 +203,11 @@ public class BobTheWizardPlugin extends Plugin {
                 case WITHDRAW:
                         //Take out coins
                         if (!WithdrawItemFromBank("Coins", -1)) {
-                            started = false;
+                            stop();
                             return;
                         }
                         if (!WithdrawItemFromBank(config.plank(), Inventory.getEmptySlots())) {
-                            started = false;
+                            stop();
                             return;
                         }
                     break;
@@ -311,7 +311,7 @@ public class BobTheWizardPlugin extends Plugin {
     private void MakePlank()
     {
         if (Inventory.search().withName("Coins").first().get().getItemQuantity() < 1050)
-            started = false;
+            stop();
 
         Widget PlankMake = client.getWidget(WidgetInfoExtended.SPELL_PLANK_MAKE.getPackedId());
         if (PlankMake != null) {
@@ -322,7 +322,7 @@ public class BobTheWizardPlugin extends Plugin {
             setTimeout();
         }
         else
-            started = false;
+            stop();
     }
 
     private void alc()
@@ -395,6 +395,12 @@ public class BobTheWizardPlugin extends Plugin {
             toggle();
         }
     };
+
+    private void stop()
+    {
+        breakHandler.stopPlugin(this);
+        started = false;
+    }
 
     public void toggle() {
         if (client.getGameState() != GameState.LOGGED_IN) {
