@@ -55,7 +55,15 @@ public interface BobTheCombatBoyConfig extends Config {
     default String target() {
         return "Rat";
     }
-
+    @ConfigItem(
+            keyName = "pestControl",
+            name = "Pest Control (BETA)",
+            description = "",
+            position = 1
+    )
+    default boolean pestControl() {
+        return false;
+    }
     @ConfigItem(
             keyName = "eat",
             name = "Eat HP",

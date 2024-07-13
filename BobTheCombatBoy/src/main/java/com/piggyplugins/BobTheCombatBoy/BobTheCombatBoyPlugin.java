@@ -1,15 +1,12 @@
 package com.piggyplugins.BobTheCombatBoy;
 
 import com.example.EthanApiPlugin.Collections.*;
-import com.example.EthanApiPlugin.Collections.query.TileObjectQuery;
 import com.example.EthanApiPlugin.EthanApiPlugin;
-import com.example.InteractionApi.BankInventoryInteraction;
 import com.example.InteractionApi.InventoryInteraction;
 import com.example.InteractionApi.NPCInteraction;
 import com.example.InteractionApi.TileObjectInteraction;
 import com.example.Packets.*;
 import com.google.inject.Provides;
-import com.piggyplugins.PiggyUtils.API.PrayerUtil;
 import com.piggyplugins.PiggyUtils.BreakHandler.ReflectBreakHandler;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
@@ -19,10 +16,7 @@ import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
-import net.runelite.client.events.NpcLootReceived;
 import net.runelite.client.game.ItemManager;
-import net.runelite.client.game.ItemStack;
-import net.runelite.client.game.LootManager;
 import net.runelite.client.input.KeyManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
@@ -32,10 +26,8 @@ import net.runelite.client.util.HotkeyListener;
 import com.google.inject.Inject;
 import org.apache.commons.lang3.RandomUtils;
 
-import javax.swing.*;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Stream;
 
 import static net.runelite.api.TileItem.OWNERSHIP_GROUP;
 import static net.runelite.api.TileItem.OWNERSHIP_SELF;
@@ -64,6 +56,7 @@ public class BobTheCombatBoyPlugin extends Plugin {
 
 
     State state;
+    State lastState;
     boolean started;
     private int timeout;
     private int combatTimeout;
@@ -117,7 +110,10 @@ public class BobTheCombatBoyPlugin extends Plugin {
             safeSpot = client.getLocalPlayer().getWorldLocation();
 
         state = getNextState();
+        if (lastState == State.PEST_ENTER_GAME && state != lastState)
+            state = State.PEST_MOVE_TO_CENTER;
         handleState();
+        lastState = state;
     }
 
     @Subscribe
@@ -214,6 +210,20 @@ public class BobTheCombatBoyPlugin extends Plugin {
             case DECANT:
                 decantPrayerPotions();
                 break;
+            case PEST_ENTER_GAME:
+                if (TileObjects.search().withName("Gangplank").withAction("Cross").withinDistance(1).nearestToPlayer().isPresent())
+                {
+                    MousePackets.queueClickPacket();
+                    TileObjectInteraction.interact(TileObjects.search().withName("Gangplank").withAction("Cross").nearestToPlayer().get(), "Cross");
+                }
+                break;
+            case PEST_MOVE_TO_CENTER:
+                WorldPoint startLoc = client.getLocalPlayer().getWorldLocation();
+                WorldPoint newLoc = startLoc.dy(-10);
+
+                MousePackets.queueClickPacket();
+                MovementPackets.queueMovement(newLoc);
+                break;
         }
     }
 
@@ -234,13 +244,16 @@ public class BobTheCombatBoyPlugin extends Plugin {
             return State.PRAYER_POTION;
 
         if (client.getBoostedSkillLevel(Skill.HITPOINTS) < config.lowHealth() ||
-                client.getBoostedSkillLevel(Skill.PRAYER) < config.lowPrayer())
+                client.getBoostedSkillLevel(Skill.PRAYER) < config.lowPrayer() && !config.pestControl())
             return State.GTFO;
+
+        if (TileObjects.search().withName("Gangplank").withAction("Cross").nearestToPlayer().isPresent() && config.pestControl())
+            return State.PEST_ENTER_GAME;
 
         if (config.useCannon() && cannonTime <= 0)
             return State.RELOAD_CANNON;
 
-        if (EthanApiPlugin.isMoving())
+        if (EthanApiPlugin.isMoving() && !config.pestControl())
             return State.MOVING;
 
         if (timeout > 0)
@@ -393,37 +406,102 @@ public class BobTheCombatBoyPlugin extends Plugin {
         setTimeout();
     }
 
+    private NPC GetTarget()
+    {
+        String[] Targets = config.target().split(",");
+
+        if (config.pestControl())
+        {
+            Targets = new String[] {"Spinner", "Torcher", "Shifter", "Defiler", "Brawler", "Splatter"};
+        }
+
+        int maxDistance = config.pestControl() ? 100 : 10;
+        int[] distance = new int[Targets.length];
+        Arrays.fill(distance, 1000);
+
+        //Get the distance to all NPCs within range
+        for (int i = 0; i < Targets.length; i++) {
+            String npcName = Targets[i].trim();
+
+            if (NPCs.search().nameContains(npcName).nearestToPlayer().isPresent()) {
+                NPC enemy = NPCs.search().nameContains(npcName).nearestToPlayer().get();
+                distance[i] = enemy.getWorldLocation().distanceTo(client.getLocalPlayer().getWorldLocation());
+            }
+        }
+
+        //Check if we found any NPCs
+        boolean foundNPC = false;
+        for (int dist : distance)
+        {
+            if (dist > 0) {
+                foundNPC = true;
+                break;
+            }
+        }
+
+        //Return null if no NPC is found
+        if (!foundNPC)
+            return null;
+
+        //Check the lowest distance
+        int lowestDistnace = 1000;
+        int lowestIndex = -1;
+        for (int i = 0; i < distance.length; i++) {
+            if (distance[i] < lowestDistnace)
+            {
+                lowestDistnace = distance[i];
+                lowestIndex = i;
+            }
+        }
+
+        //Check if valid target
+        if (lowestDistnace < maxDistance && lowestIndex != -1)
+        {
+            String npcName = Targets[lowestIndex].trim();
+
+            return NPCs.search().nameContains(npcName).nearestToPlayer().get();
+        }
+
+        return null;
+    }
+
     private void attack() {
-        if (currentTarget == null) {
-            NPCs.search().nameContains(config.target()).nearestToPlayer().ifPresent(enemy -> {
-                if (enemy.getWorldLocation().distanceTo(client.getLocalPlayer().getWorldLocation()) > 10) {
-                    return;
-                }
-                currentTarget = enemy;
-            });
-        } else {
-            try {
-                if (!currentTarget.getComposition().isInteractible()) {
-                    currentTarget = null;
-                    return;
-                }
-            } catch (Exception e) {
-                currentTarget = null;
+        if (config.pestControl())
+        {
+            currentTarget = GetTarget();
+
+            if (currentTarget == null)
                 return;
-            }
-
-
-            if (config.safeSpot()) {
-                if (currentTarget.getWorldLocation().distanceTo(safeSpot) > 10) {
-                    currentTarget = null;
-                    return;
-                }
-            }
 
             MousePackets.queueClickPacket();
             NPCInteraction.interact(currentTarget, "Attack");
         }
+        else
+        {
+            if (currentTarget == null) {
+                currentTarget = GetTarget();
+            } else {
+                try {
+                    if (!currentTarget.getComposition().isInteractible()) {
+                        currentTarget = null;
+                        return;
+                    }
+                } catch (Exception e) {
+                    currentTarget = null;
+                    return;
+                }
 
+                if (config.safeSpot()) {
+                    if (currentTarget.getWorldLocation().distanceTo(safeSpot) > 10) {
+                        currentTarget = null;
+                        return;
+                    }
+                }
+
+                MousePackets.queueClickPacket();
+                NPCInteraction.interact(currentTarget, "Attack");
+            }
+        }
         setTimeout();
     }
 

@@ -16,5 +16,7 @@ public enum State {
     MOVE_TO_SAFE_SPOT,
     RESET_AGGRO,
     GTFO,
-    DECANT
+    DECANT,
+    PEST_ENTER_GAME,
+    PEST_MOVE_TO_CENTER
 }
