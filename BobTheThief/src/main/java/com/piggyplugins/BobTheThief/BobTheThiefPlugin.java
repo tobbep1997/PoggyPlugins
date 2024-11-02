@@ -28,6 +28,8 @@ import com.google.inject.Inject;
 import net.runelite.client.util.Text;
 import org.apache.commons.lang3.RandomUtils;
 
+import com.piggyplugins.BobTheFunction.BobTheFunction;
+
 import java.util.*;
 
 
@@ -309,12 +311,7 @@ public class BobTheThiefPlugin extends Plugin {
                 break;
             }
         }
-        /*
-        NPCs.search().withName(npcName).nearestToPlayer().ifPresent(npc -> {
-            m_targetNPC = npc;
-        });
 
-        */
     }
 
     private void findObject() {
@@ -352,7 +349,7 @@ public class BobTheThiefPlugin extends Plugin {
     }
 
     private void setTimeout() {
-        timeout = RandomUtils.nextInt(config.tickdelayMin(), config.tickDelayMax());
+        timeout = BobTheFunction.GetRandTickDescending(1,5);
     }
 
     private boolean isFood(String name) {

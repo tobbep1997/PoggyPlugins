@@ -45,6 +45,7 @@ dependencies {
     implementation project(path: ':BobTheThief')
     implementation project(path: ':BobTheWizard')
     implementation project(path: ':BobTheFarmer')
+    implementation project(path: ':BobTheFunction')
     implementation project(path: ':BobTheCutter')
     implementation project(path: ':BobTheLazyNMZ')
     implementation project(path: ':BobTheCombatBoy')
