@@ -3,6 +3,7 @@ package com.piggyplugins.BobTheThief;
 import com.example.EthanApiPlugin.Collections.*;
 import com.example.EthanApiPlugin.Collections.query.TileObjectQuery;
 import com.example.EthanApiPlugin.EthanApiPlugin;
+import com.example.EthanApiPlugin.Utility.WorldPointUtility;
 import com.example.InteractionApi.*;
 import com.example.Packets.MousePackets;
 import com.google.inject.Provides;
@@ -11,6 +12,7 @@ import com.piggyplugins.PiggyUtils.API.EquipmentUtil;
 import com.piggyplugins.PiggyUtils.API.InventoryUtil;
 import com.piggyplugins.PiggyUtils.BreakHandler.ReflectBreakHandler;
 import net.runelite.api.*;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.config.ConfigManager;
@@ -18,6 +20,7 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.input.KeyManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.puzzlesolver.solver.pathfinding.Pathfinder;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.HotkeyListener;
 
@@ -101,8 +104,12 @@ public class BobTheThiefPlugin extends Plugin {
                 breakHandler.startBreak(this);
                 timeout = 10;
                 break;
-            //TODO: Redo banking
             case PICKPOCKET:
+                if (config.searchNpc()) {
+                    findNpc();
+                } else {
+                    findObject();
+                }
                 pickpocket();
                 setTimeout();
                 break;
@@ -110,11 +117,7 @@ public class BobTheThiefPlugin extends Plugin {
                 timeout--;
                 break;
             case FIND_TARGET:
-                if (config.searchNpc()) {
-                    findNpc();
-                } else {
-                    findObject();
-                }
+
                 setTimeout();
                 break;
             case EAT:
@@ -200,17 +203,24 @@ public class BobTheThiefPlugin extends Plugin {
             }
         }
 
-        if (m_targetNPC != null)
-            return State.PICKPOCKET;
-
         // default it'll look for an object.
-        return State.FIND_TARGET;
+        return State.PICKPOCKET;
     }
 
     private void pickpocket()
     {
-        MousePackets.queueClickPacket();
-        NPCInteraction.interact(m_targetNPC, "Pickpocket");
+        if (Inventory.search().nameContains("Coin pouch").withAction("Open-all").first().isPresent() &&
+            Inventory.search().nameContains("Coin pouch").withAction("Open-all").first().get().getItemQuantity() > 20)
+        {
+            MousePackets.queueClickPacket();
+            InventoryInteraction.useItem(Inventory.search().nameContains("Coin pouch").withAction("Open-all").first().get(), "Open-all");
+        }
+        else
+        {
+            MousePackets.queueClickPacket();
+            NPCInteraction.interact(m_targetNPC, "Pickpocket");
+
+        }
     }
 
     private void EquipDodgy()
@@ -262,11 +272,6 @@ public class BobTheThiefPlugin extends Plugin {
         }
     }
 
-    private void equipDodgy()
-    {
-
-    }
-
     private boolean isBankPinOpen() {
         Widget bankPinWidget = client.getWidget(213, 0);
         if (bankPinWidget == null) {
@@ -289,9 +294,27 @@ public class BobTheThiefPlugin extends Plugin {
 
     private void findNpc() {
         String npcName = config.objectToInteract();
+
+        List<NPC> targets = NPCs.search().withName(npcName).withAction("Pickpocket").result();
+
+        targets.sort((n1, n2) -> n1.getWorldLocation().distanceTo(client.getLocalPlayer().getWorldLocation()) - n2.getWorldLocation().distanceTo(client.getLocalPlayer().getWorldLocation()));
+
+        List<WorldPoint> reachableTiles = EthanApiPlugin.reachableTiles();
+
+        for (NPC target : targets)
+        {
+            if (reachableTiles.contains(target.getWorldLocation()))
+            {
+                m_targetNPC = target;
+                break;
+            }
+        }
+        /*
         NPCs.search().withName(npcName).nearestToPlayer().ifPresent(npc -> {
             m_targetNPC = npc;
         });
+
+        */
     }
 
     private void findObject() {
