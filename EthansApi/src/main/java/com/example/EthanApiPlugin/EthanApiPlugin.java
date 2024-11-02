@@ -2,6 +2,8 @@ package com.example.EthanApiPlugin;
 
 import com.example.EthanApiPlugin.Collections.*;
 import com.example.EthanApiPlugin.Collections.query.QuickPrayer;
+import com.example.EthanApiPlugin.PathFinding.Node;
+import com.example.PacketUtils.ObfuscatedNames;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -10,12 +12,10 @@ import lombok.SneakyThrows;
 import net.runelite.api.*;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.GameTick;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.RuneLite;
 import net.runelite.client.eventbus.EventBus;
-import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
@@ -103,46 +103,9 @@ public class EthanApiPlugin extends Plugin {
         return client.getLocalPlayer().getWorldLocation();
     }
 
-    public static SkullIcon getSkullIcon(Player player) {
-        Field skullField = null;
-        try {
-            skullField = player.getClass().getDeclaredField("ag");
-            skullField.setAccessible(true);
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();
-            return null;
-        }
-        int var1 = -1;
-        try {
-            var1 = skullField.getInt(player) * -227316761;
-            skullField.setAccessible(false);
-        } catch (IllegalAccessException | NullPointerException e) {
-            e.printStackTrace();
-        }
-        switch (var1) {
-            case 0:
-                return SkullIcon.SKULL;
-            case 1:
-                return SkullIcon.SKULL_FIGHT_PIT;
-            case 2:
-            case 3:
-            case 4:
-            case 5:
-            case 6:
-            case 7:
-            default:
-                return null;
-            case 8:
-                return SkullIcon.DEAD_MAN_FIVE;
-            case 9:
-                return SkullIcon.DEAD_MAN_FOUR;
-            case 10:
-                return SkullIcon.DEAD_MAN_THREE;
-            case 11:
-                return SkullIcon.DEAD_MAN_TWO;
-            case 12:
-                return SkullIcon.DEAD_MAN_ONE;
-        }
+    @Deprecated //apparently RL no longer blocks this on non-local players.
+    public static int getSkullIcon(Player player) {
+        return player.getSkullIcon();
     }
 
     public static boolean isQuickPrayerActive(QuickPrayer prayer) {
@@ -176,7 +139,7 @@ public class EthanApiPlugin extends Plugin {
                 }
                 int value = declaredField.getInt(npc);
                 declaredField.setInt(npc, 4795789);
-                if (npc.getAnimation() == -614178723 * 4795789) {
+                if (npc.getAnimation() == ObfuscatedNames.getAnimationMultiplier * 4795789) {
                     animationField = declaredField.getName();
                     declaredField.setInt(npc, value);
                     declaredField.setAccessible(false);
@@ -191,45 +154,98 @@ public class EthanApiPlugin extends Plugin {
         }
         Field animation = npc.getClass().getSuperclass().getDeclaredField(animationField);
         animation.setAccessible(true);
-        int anim = animation.getInt(npc) * -614178723;
+        int anim = animation.getInt(npc) * ObfuscatedNames.getAnimationMultiplier;
         animation.setAccessible(false);
         return anim;
     }
 
 
-//    @SneakyThrows
-//    public static int pathLength(NPC npc) {
-//        Field pathLength = npc.getClass().getSuperclass().getDeclaredField("dk");
-//        pathLength.setAccessible(true);
-//        int path = pathLength.getInt(npc) * -1259578643;
-//        pathLength.setAccessible(false);
-//        return path;
-//    }
-//
-//    @SneakyThrows
-//    public static int pathLength(Player player) {
-//        Field pathLength = player.getClass().getSuperclass().getDeclaredField("dk");
-//        pathLength.setAccessible(true);
-//        int path = pathLength.getInt(player) * -1259578643;
-//        pathLength.setAccessible(false);
-//        return path;
-//    }
 
     @SneakyThrows
     public static HeadIcon getHeadIcon(NPC npc) {
+        Field aq = npc.getClass().getDeclaredField("ay");
+        aq.setAccessible(true);
+        Object aqObj = aq.get(npc);
+        if (aqObj == null) {
+            aq.setAccessible(false);
+            HeadIcon icon = getOldHeadIcon(npc);
+            if(icon==null){
+                return getOlderHeadicon(npc);
+            }
+            return icon;
+        }
+        Field aeField = aqObj.getClass().getDeclaredField("aw");
+        aeField.setAccessible(true);
+        short[] ae = (short[]) aeField.get(aqObj);
+        aeField.setAccessible(false);
+        aq.setAccessible(false);
+        if (ae == null) {
+            HeadIcon icon = getOldHeadIcon(npc);
+            if(icon==null){
+                return getOlderHeadicon(npc);
+            }
+            return icon;
+        }
+        if (ae.length == 0) {
+            HeadIcon icon = getOldHeadIcon(npc);
+            if(icon==null){
+                return getOlderHeadicon(npc);
+            }
+            return icon;
+        }
+        short headIcon = ae[0];
+        if (headIcon == -1) {
+            HeadIcon icon = getOldHeadIcon(npc);
+            if(icon==null){
+                return getOlderHeadicon(npc);
+            }
+            return icon;
+        }
+        return HeadIcon.values()[headIcon];
+    }
+    @SneakyThrows
+    public static HeadIcon getOlderHeadicon(NPC npc){
         Method getHeadIconMethod = null;
         for (Method declaredMethod : npc.getComposition().getClass().getDeclaredMethods()) {
             if (declaredMethod.getName().length() == 2 && declaredMethod.getReturnType() == short.class && declaredMethod.getParameterCount() == 1) {
                 getHeadIconMethod = declaredMethod;
                 getHeadIconMethod.setAccessible(true);
-                short headIcon = (short) getHeadIconMethod.invoke(npc.getComposition(), 0);
+                short headIcon = -1;
+                try {
+                    headIcon = (short) getHeadIconMethod.invoke(npc.getComposition(), 0);
+                }catch (Exception e){
+                    //nothing
+                }
                 getHeadIconMethod.setAccessible(false);
 
                 if (headIcon == -1) {
                     continue;
                 }
-
                 return HeadIcon.values()[headIcon];
+            }
+        }
+        return null;
+    }
+
+    @SneakyThrows
+    public static HeadIcon getOldHeadIcon(NPC npc) {
+        Method getHeadIconMethod;
+        for (Method declaredMethod : npc.getClass().getDeclaredMethods()) {
+            if (declaredMethod.getName().length() == 2 && declaredMethod.getReturnType() == short[].class && declaredMethod.getParameterCount() == 0) {
+                getHeadIconMethod = declaredMethod;
+                getHeadIconMethod.setAccessible(true);
+                short[] headIcon = null;
+                try {
+                    headIcon = (short[]) getHeadIconMethod.invoke(npc);
+                } catch (Exception e) {
+                    //nothing
+                }
+                getHeadIconMethod.setAccessible(false);
+
+                if (headIcon == null) {
+                    continue;
+                }
+                return HeadIcon.values()[headIcon[0]];
             }
         }
         return null;
@@ -279,13 +295,13 @@ public class EthanApiPlugin extends Plugin {
         boolean[][] visited = new boolean[104][104];
         int[][] flags = client.getCollisionMaps()[client.getPlane()].getFlags();
         WorldPoint playerLoc = client.getLocalPlayer().getWorldLocation();
-        int firstPoint = (playerLoc.getX()-client.getBaseX() << 16) | playerLoc.getY()-client.getBaseY();
+        int firstPoint = (playerLoc.getX() - client.getBaseX() << 16) | playerLoc.getY() - client.getBaseY();
         ArrayDeque<Integer> queue = new ArrayDeque<>();
         queue.add(firstPoint);
         while (!queue.isEmpty()) {
             int point = queue.poll();
-            short x =(short)(point >> 16);
-            short y = (short)point;
+            short x = (short) (point >> 16);
+            short y = (short) point;
             if (y < 0 || x < 0 || y > 104 || x > 104) {
                 continue;
             }
@@ -390,7 +406,7 @@ public class EthanApiPlugin extends Plugin {
     }
 
     @Deprecated
-    public static TileObject findObject(String objectName) {
+    public static  TileObject findObject(String objectName) {
         ArrayList<TileObject> validObjects = new ArrayList<>();
         for (Tile[][] tile : client.getScene().getTiles()) {
             for (Tile[] tiles : tile) {
@@ -417,47 +433,38 @@ public class EthanApiPlugin extends Plugin {
         return null;
     }
 
+    @Deprecated // use client menuAction
     @SneakyThrows
-    public static void invoke(int var0, int var1, int var2, int var3, int var4,int var5, String var6, String var7, int var8,
+    public static void invoke(int var0, int var1, int var2, int var3, int var4, int var5, String var6, String var7, int var8,
                               int var9) {
         if (doAction == null) {
+            Class<?> qtClass = null;
             Field classes = ClassLoader.class.getDeclaredField("classes");
             classes.setAccessible(true);
             ClassLoader classLoader = client.getClass().getClassLoader();
             Vector<Class<?>> classesVector = (Vector<Class<?>>) classes.get(classLoader);
-            Class<?>[] params = new Class[]{int.class, int.class, int.class, int.class, int.class, int.class, String.class, String.class, int.class, int.class};
-            for (Class<?> aClass : classesVector) {
-                if (doAction != null) {
-                    break;
-                }
-                for (Method declaredMethod : aClass.getDeclaredMethods()) {
-                    if (declaredMethod.getParameterCount() != 11) {
-                        continue;
-                    }
-                    if (declaredMethod.getReturnType() != void.class) {
-                        continue;
-                    }
-                    if (!Arrays.equals(Arrays.copyOfRange(declaredMethod.getParameterTypes(), 0, 10), params)) {
-                        continue;
-                    }
-                    doAction = declaredMethod;
-                    System.out.println(doAction);
+
+            for (Class<?> clazz : classesVector) {
+                if (clazz.getName().equals(ObfuscatedNames.doActionClassName)) {
+                    qtClass = clazz;
                     break;
                 }
             }
+
+            if (qtClass != null) {
+                try {
+                    doAction = qtClass.getDeclaredMethod(ObfuscatedNames.doActionMethodName, int.class, int.class, int.class, int.class, int.class, int.class, String.class, String.class, int.class, int.class);
+                } catch (NoSuchMethodException ignored) {
+                }
+            } else {
+                System.out.println("Cant find doAction");
+                return;
+            }
         }
+
         doAction.setAccessible(true);
-        doAction.invoke(null, var0, var1, var2, var3, var4, var5, var6, var7, var8,var9, Byte.MAX_VALUE);
+        doAction.invoke(null, var0, var1, var2, var3, var4, var5, var6, var7, var8, var9, -886112733);
         doAction.setAccessible(false);
-    }
-
-
-    // BACKUP FOR OTHER PLUGINS I HAVE NOT UDPDATED/CBA
-    // REMOVE LATER
-    @SneakyThrows
-    public static void invoke(int var0, int var1, int var2, int var3, int var4, String var6, String var7, int var8,
-                              int var9) {
-        invoke(var0, var1, var2, var3, var4, -1, var6, var7, var8, var9);
     }
 
     @Deprecated
@@ -726,7 +733,7 @@ public class EthanApiPlugin extends Plugin {
                                                    HashSet<WorldPoint> impassible, HashSet<WorldPoint> dangerous,
                                                    HashSet<WorldPoint> walkable, HashSet<WorldPoint> walked) {
         Queue<List<WorldPoint>> queue = new LinkedList<>(paths);
-        if(queue.isEmpty()){
+        if (queue.isEmpty()) {
             queue.add(List.of(client.getLocalPlayer().getWorldLocation()));
         }
         ArrayDeque<Node> nodeQueue = new ArrayDeque<>();
