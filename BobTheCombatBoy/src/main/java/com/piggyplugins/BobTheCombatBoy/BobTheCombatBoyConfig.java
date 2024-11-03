@@ -47,6 +47,16 @@ public interface BobTheCombatBoyConfig extends Config {
     }
 
     @ConfigItem(
+            keyName = "setResetSpot",
+            name = "Set Reset Spot",
+            description = "",
+            position = 1
+    )
+    default Keybind setResetSpot() {
+        return Keybind.NOT_SET;
+    }
+
+    @ConfigItem(
             keyName = "target",
             name = "Target",
             description = "",

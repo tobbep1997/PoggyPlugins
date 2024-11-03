@@ -5,6 +5,7 @@ plugins {
 dependencies {
     compileOnly project(":EthansApi")
     compileOnly project(":PiggyUtils")
+    compileOnly project(":BobTheFunction")
 }
 
 sourceSets {

@@ -9,6 +9,7 @@ import com.example.InteractionApi.NPCInteraction;
 import com.example.InteractionApi.TileObjectInteraction;
 import com.example.Packets.MousePackets;
 import com.google.inject.Provides;
+import com.piggyplugins.BobTheFunction.RandomTick;
 import com.piggyplugins.PiggyUtils.BreakHandler.ReflectBreakHandler;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
@@ -289,7 +290,7 @@ public class BobTheSkillerPlugin extends Plugin {
     }
 
     private void setTimeout() {
-        timeout = RandomUtils.nextInt(config.tickdelayMin(), config.tickDelayMax());
+        timeout = RandomTick.GetRandTick(config.tickdelayMin(), config.tickDelayMax());
     }
 
     private boolean isTool(String name) {

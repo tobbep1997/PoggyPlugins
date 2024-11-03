@@ -7,6 +7,7 @@ import com.example.EthanApiPlugin.Utility.WorldPointUtility;
 import com.example.InteractionApi.*;
 import com.example.Packets.MousePackets;
 import com.google.inject.Provides;
+import com.piggyplugins.BobTheFunction.RandomTick;
 import com.piggyplugins.PiggyUtils.API.BankUtil;
 import com.piggyplugins.PiggyUtils.API.EquipmentUtil;
 import com.piggyplugins.PiggyUtils.API.InventoryUtil;
@@ -28,7 +29,7 @@ import com.google.inject.Inject;
 import net.runelite.client.util.Text;
 import org.apache.commons.lang3.RandomUtils;
 
-import com.piggyplugins.BobTheFunction.BobTheFunction;
+import com.piggyplugins.BobTheFunction.RandomTick;
 
 import java.util.*;
 
@@ -349,7 +350,7 @@ public class BobTheThiefPlugin extends Plugin {
     }
 
     private void setTimeout() {
-        timeout = BobTheFunction.GetRandTickDescending(1,5);
+        timeout = RandomTick.GetRandTickDescending(1,5);
     }
 
     private boolean isFood(String name) {

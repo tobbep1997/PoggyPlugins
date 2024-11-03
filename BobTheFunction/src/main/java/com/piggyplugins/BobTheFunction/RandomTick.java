@@ -1,11 +1,8 @@
 package com.piggyplugins.BobTheFunction;
 
-import java.util.*;
+import java.util.Random;
 
-
-
-public class BobTheFunction {
-
+public class RandomTick {
     static Random rand = new Random();
 
     public static double RandStdDiv(double min, double max)
@@ -41,4 +38,5 @@ public class BobTheFunction {
 
         return (max - Math.abs((int)RandStdDiv(newMin, newMax))) + min;
     }
+
 }

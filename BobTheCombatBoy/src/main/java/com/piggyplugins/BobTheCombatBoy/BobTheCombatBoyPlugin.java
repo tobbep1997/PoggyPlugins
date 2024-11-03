@@ -7,6 +7,7 @@ import com.example.InteractionApi.NPCInteraction;
 import com.example.InteractionApi.TileObjectInteraction;
 import com.example.Packets.*;
 import com.google.inject.Provides;
+import com.piggyplugins.BobTheFunction.RandomTick;
 import com.piggyplugins.PiggyUtils.BreakHandler.ReflectBreakHandler;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
@@ -161,7 +162,8 @@ public class BobTheCombatBoyPlugin extends Plugin {
     private void handleState() {
         switch (state) {
             case ANIMATING:
-                combatTimeout = config.attackTimeout();
+                if (combatTimeout > 0)
+                    combatTimeout = RandomTick.GetRandTickDescending(config.attackTimeout(),config.attackTimeout() + 3);
                 break;
             case HANDLE_BREAK:
                 takeBreak = false;
@@ -557,7 +559,7 @@ public class BobTheCombatBoyPlugin extends Plugin {
     }
 
     private void setTimeout() {
-        timeout = RandomUtils.nextInt(config.tickdelayMin(), config.tickDelayMax());
+        timeout = RandomTick.GetRandTick(1, 10);
     }
 
     private int randNext(int base, int down, int up) {
@@ -568,6 +570,13 @@ public class BobTheCombatBoyPlugin extends Plugin {
         @Override
         public void hotkeyPressed() {
             toggle();
+        }
+    };
+
+    private final HotkeyListener setResetSpot = new HotkeyListener(() -> config.setResetSpot()) {
+        @Override
+        public void hotkeyPressed(){
+            setResetSpot();
         }
     };
 
@@ -583,5 +592,14 @@ public class BobTheCombatBoyPlugin extends Plugin {
         } else {
             breakHandler.startPlugin(this);
         }
+    }
+
+    public void setResetSpot()
+    {
+        if (client.getGameState() != GameState.LOGGED_IN) {
+            return;
+        }
+
+        resetSpot = client.getLocalPlayer().getWorldLocation();
     }
 }
