@@ -3,11 +3,11 @@ package com.piggyplugins.BobTheThief;
 import com.example.EthanApiPlugin.Collections.*;
 import com.example.EthanApiPlugin.Collections.query.TileObjectQuery;
 import com.example.EthanApiPlugin.EthanApiPlugin;
-import com.example.EthanApiPlugin.Utility.WorldPointUtility;
 import com.example.InteractionApi.*;
 import com.example.Packets.MousePackets;
 import com.google.inject.Provides;
-import com.piggyplugins.BobTheFunction.RandomTick;
+import com.piggyplugins.BobTheFunction.BobTheRandomTick;
+import com.piggyplugins.BobTheFunction.BobTheTravel;
 import com.piggyplugins.PiggyUtils.API.BankUtil;
 import com.piggyplugins.PiggyUtils.API.EquipmentUtil;
 import com.piggyplugins.PiggyUtils.API.InventoryUtil;
@@ -21,15 +21,12 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.input.KeyManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
-import net.runelite.client.plugins.puzzlesolver.solver.pathfinding.Pathfinder;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.HotkeyListener;
 
 import com.google.inject.Inject;
 import net.runelite.client.util.Text;
 import org.apache.commons.lang3.RandomUtils;
-
-import com.piggyplugins.BobTheFunction.RandomTick;
 
 import java.util.*;
 
@@ -300,13 +297,14 @@ public class BobTheThiefPlugin extends Plugin {
 
         List<NPC> targets = NPCs.search().withName(npcName).withAction("Pickpocket").result();
 
-        targets.sort((n1, n2) -> n1.getWorldLocation().distanceTo(client.getLocalPlayer().getWorldLocation()) - n2.getWorldLocation().distanceTo(client.getLocalPlayer().getWorldLocation()));
+        //targets.sort((n1, n2) -> n1.getWorldLocation().distanceTo(client.getLocalPlayer().getWorldLocation()) - n2.getWorldLocation().distanceTo(client.getLocalPlayer().getWorldLocation()));
+        targets.sort(Comparator.comparingInt(n -> BobTheTravel.TileDistance(n.getWorldLocation())));
 
         List<WorldPoint> reachableTiles = EthanApiPlugin.reachableTiles();
 
         for (NPC target : targets)
         {
-            if (reachableTiles.contains(target.getWorldLocation()))
+            if (BobTheTravel.TileDistance(target.getWorldLocation()) < Integer.MAX_VALUE)
             {
                 m_targetNPC = target;
                 break;
@@ -350,7 +348,7 @@ public class BobTheThiefPlugin extends Plugin {
     }
 
     private void setTimeout() {
-        timeout = RandomTick.GetRandTickDescending(1,5);
+        timeout = BobTheRandomTick.GetRandTickDescending(1,5);
     }
 
     private boolean isFood(String name) {

@@ -2,7 +2,7 @@ package com.piggyplugins.BobTheFunction;
 
 import java.util.Random;
 
-public class RandomTick {
+public class BobTheRandomTick {
     static Random rand = new Random();
 
     public static double RandStdDiv(double min, double max)

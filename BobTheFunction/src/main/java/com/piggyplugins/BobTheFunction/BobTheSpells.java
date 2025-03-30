@@ -8,7 +8,7 @@ import net.runelite.api.widgets.Widget;
 
 import java.util.Optional;
 
-public class Spells {
+public class BobTheSpells {
     //Casts a spell and returns true if the spell has been casted
     public static boolean CastTeleportSpell(WidgetInfoExtended spell, String Cast) {
         Optional<Widget> teleportSpellIcon = Widgets.search().withId(spell.getPackedId()).first();

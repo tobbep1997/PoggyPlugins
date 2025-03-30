@@ -1,8 +1,6 @@
 package com.piggyplugins.BobTheFunction;
 
-import com.example.EthanApiPlugin.Collections.BankInventory;
-import com.example.EthanApiPlugin.Collections.Inventory;
-import com.example.EthanApiPlugin.Collections.TileObjects;
+import com.example.EthanApiPlugin.Collections.*;
 import com.example.EthanApiPlugin.Collections.query.TileObjectQuery;
 import com.example.InteractionApi.BankInteraction;
 import com.example.InteractionApi.BankInventoryInteraction;
@@ -16,24 +14,31 @@ import net.runelite.api.TileObject;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.widgets.Widget;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class Bank {
+public class BobTheBank {
 
     //------------------------------------- Public -------------------------------------
 
     //Opens the closes bank
-    public static void OpenBank(Client client, int maxDistance) {
+    public static boolean OpenBank(Client client, int maxDistance) {
+        //Check if pin needs to be entered
+        if (Widgets.search().withId(13959169).first().isPresent()) {
+            return false;
+        }
+
         TileObject bankBooth = BankCloseBy(client, maxDistance);
+
         if (bankBooth != null) {
             MousePackets.queueClickPacket();
             TileObjectInteraction.interact(bankBooth, GetBankInteraction(bankBooth));
         }
+
+        return Bank.isOpen();
     }
 
     //Find close banks

@@ -2,12 +2,12 @@ package com.piggyplugins.BobTheFunction;
 
 import net.runelite.api.coords.WorldPoint;
 
-public class Path {
+public class BobThePath {
 
     public int pathIndex;
     public WorldPoint[] worldPoints;
 
-    public Path(WorldPoint[] worldPoints)
+    public BobThePath(WorldPoint[] worldPoints)
     {
         this.pathIndex = 0;
         this.worldPoints = worldPoints;
@@ -30,4 +30,5 @@ public class Path {
         else
             return null;
     }
+
 }

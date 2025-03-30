@@ -7,7 +7,7 @@ import com.example.InteractionApi.NPCInteraction;
 import com.example.InteractionApi.TileObjectInteraction;
 import com.example.Packets.*;
 import com.google.inject.Provides;
-import com.piggyplugins.BobTheFunction.RandomTick;
+import com.piggyplugins.BobTheFunction.BobTheRandomTick;
 import com.piggyplugins.PiggyUtils.BreakHandler.ReflectBreakHandler;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
@@ -163,7 +163,7 @@ public class BobTheCombatBoyPlugin extends Plugin {
         switch (state) {
             case ANIMATING:
                 if (combatTimeout > 0)
-                    combatTimeout = RandomTick.GetRandTickDescending(config.attackTimeout(),config.attackTimeout() + 3);
+                    combatTimeout = BobTheRandomTick.GetRandTickDescending(config.attackTimeout(),config.attackTimeout() + 3);
                 break;
             case HANDLE_BREAK:
                 takeBreak = false;
@@ -559,7 +559,7 @@ public class BobTheCombatBoyPlugin extends Plugin {
     }
 
     private void setTimeout() {
-        timeout = RandomTick.GetRandTick(1, 10);
+        timeout = BobTheRandomTick.GetRandTick(1, 10);
     }
 
     private int randNext(int base, int down, int up) {

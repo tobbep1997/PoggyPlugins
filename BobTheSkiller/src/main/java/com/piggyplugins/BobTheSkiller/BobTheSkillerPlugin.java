@@ -9,7 +9,7 @@ import com.example.InteractionApi.NPCInteraction;
 import com.example.InteractionApi.TileObjectInteraction;
 import com.example.Packets.MousePackets;
 import com.google.inject.Provides;
-import com.piggyplugins.BobTheFunction.RandomTick;
+import com.piggyplugins.BobTheFunction.BobTheRandomTick;
 import com.piggyplugins.PiggyUtils.BreakHandler.ReflectBreakHandler;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
@@ -22,6 +22,7 @@ import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.HotkeyListener;
+import com.piggyplugins.BobTheFunction.BobTheBank;
 
 import com.google.inject.Inject;
 import net.runelite.client.util.Text;
@@ -93,35 +94,13 @@ public class BobTheSkillerPlugin extends Plugin {
                 timeout = 10;
                 break;
             case BANK:
-                if (Widgets.search().withId(13959169).first().isPresent()) {
-                    bankPin = true;
+
+                if (!BobTheBank.OpenBank(client, 50))
+                {
+                    setTimeout();
                     return;
                 }
-                if (Widgets.search().withId(786445).first().isEmpty()) {
-                    TileObjects.search().withAction("Bank").nearestToPlayer().ifPresent(tileObject -> {
-                        MousePackets.queueClickPacket();
-                        TileObjectInteraction.interact(tileObject, "Bank");
-                        return;
-                    });
-                    NPCs.search().withAction("Bank").nearestToPlayer().ifPresent(npc -> {
-                        if (EthanApiPlugin.canPathToTile(npc.getWorldLocation()).isReachable()) {
-                            MousePackets.queueClickPacket();
-                            NPCInteraction.interact(npc, "Bank");
-                        }
-                        return;
-                    });
-                    TileObjects.search().withName("Bank chest").nearestToPlayer().ifPresent(tileObject -> {
-                        MousePackets.queueClickPacket();
-                        TileObjectInteraction.interact(tileObject, "Use");
-                        return;
-                    });
-                    if (TileObjects.search().withAction("Bank").nearestToPlayer().isEmpty() && NPCs.search().withAction("Bank").nearestToPlayer().isEmpty()) {
-                        EthanApiPlugin.sendClientMessage("Bank is not found, move to an area with a bank.");
-                    }
 
-                    return;
-
-                }
                 List<Widget> items = BankInventory.search().result();
                 for (Widget item : items) {
                     if (!isTool(item.getName().toLowerCase()) && !shouldKeep(item.getName().toLowerCase())) {
@@ -186,55 +165,20 @@ public class BobTheSkillerPlugin extends Plugin {
 
     private void findObject() {
         String objectName = config.objectToInteract();
-        if (config.useForestryTreeNotClosest() && config.expectedAction().equalsIgnoreCase("chop")) {
-            TileObjects.search().withName(objectName).nearestToPoint(getObjectWMostPlayers()).ifPresent(tileObject -> {
-                ObjectComposition comp = TileObjectQuery.getObjectComposition(tileObject);
-                TileObjectInteraction.interact(tileObject, comp.getActions()[0]);
-            });
-        } else {
-            TileObjects.search().withName(objectName).withinDistance(config.searchDistance()).nearestToPlayer().ifPresent(tileObject -> {
-                ObjectComposition comp = TileObjectQuery.getObjectComposition(tileObject);
-                TileObjectInteraction.interact(tileObject, comp.getActions()[0]); // find the object we're looking for.  this specific example will only work if the first Action the object has is the one that interacts with it.
-                // don't *always* do this, you can manually type the possible actions. eg. "Mine", "Chop", "Cook", "Climb".
-            });
-        }
+
+        TileObjects.search().withName(objectName).withinDistance(config.searchDistance()).nearestToPlayer().ifPresent(tileObject -> {
+            MousePackets.queueClickPacket();
+            TileObjectInteraction.interact(tileObject, config.expectedAction()); // find the object we're looking for.  this specific example will only work if the first Action the object has is the one that interacts with it.
+            // don't *always* do this, you can manually type the possible actions. eg. "Mine", "Chop", "Cook", "Climb".
+        });
+
     }
-
-    /**
-     * Tile w most players on it within 2 tiles of the object we're looking for
-     *
-     * @return That tile or the player's tile if failed(such as doing forestry option when alone by trees)
-     */
-    public WorldPoint getObjectWMostPlayers() {
-        String objectName = config.objectToInteract();
-        Map<WorldPoint, Integer> playerCounts = new HashMap<>();
-        WorldPoint mostPlayersTile = null;
-        int highestCount = 0;
-        List<TileObject> objects = TileObjects.search().withName(objectName).result();
-
-        List<Player> players = Players.search().notLocalPlayer().result();
-
-        for (TileObject object : objects) {
-            for (Player player : players) {
-                if (player.getWorldLocation().distanceTo(object.getWorldLocation()) <= 2) {
-                    WorldPoint playerTile = player.getWorldLocation();
-                    playerCounts.put(playerTile, playerCounts.getOrDefault(playerTile, 0) + 1);
-                    if (playerCounts.get(playerTile) > highestCount) {
-                        highestCount = playerCounts.get(playerTile);
-                        mostPlayersTile = playerTile;
-                    }
-                }
-            }
-        }
-
-        return mostPlayersTile == null ? client.getLocalPlayer().getWorldLocation() : mostPlayersTile;
-    }
-
 
     private void findNpc() {
         String npcName = config.objectToInteract();
         NPCs.search().withName(npcName).nearestToPlayer().ifPresent(npc -> {
             NPCComposition comp = client.getNpcDefinition(npc.getId());
+            MousePackets.queueClickPacket();
             NPCInteraction.interact(npc, config.expectedAction()); // For fishing spots ?
         });
     }
@@ -290,7 +234,7 @@ public class BobTheSkillerPlugin extends Plugin {
     }
 
     private void setTimeout() {
-        timeout = RandomTick.GetRandTick(config.tickdelayMin(), config.tickDelayMax());
+        timeout = BobTheRandomTick.GetRandTick(config.tickdelayMin(), config.tickDelayMax());
     }
 
     private boolean isTool(String name) {
